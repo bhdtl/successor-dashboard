@@ -109,7 +109,7 @@ export const DokkanCatalog: React.FC = () => {
 
       // Apply Search
       if (searchTerm.trim()) {
-        query = query.or(`name.ilike.%${searchTerm}%,subname.ilike.%${searchTerm}%`);
+        query = query.or(`name.ilike.%${searchTerm}%,subname.ilike.%${searchTerm}%,tag.ilike.%${searchTerm}%`);
       }
 
       // Apply Rarity filter

@@ -36,6 +36,7 @@ interface Character {
   rainbow_hp: number | null;
   rainbow_atk: number | null;
   rainbow_def: number | null;
+  tag?: string;
 }
 
 interface TeamSlot {
@@ -71,7 +72,7 @@ export const TeamBuilder: React.FC = () => {
         // Fetch all characters with full stats
         const { data: chars } = await supabase
           .from('dokkan_characters')
-          .select('id, name, subname, element, rarity, leader_skill, category_ids, link_ids, max_hp, max_atk, max_def, base_hp, base_atk, base_def, rainbow_hp, rainbow_atk, rainbow_def');
+          .select('id, name, subname, element, rarity, leader_skill, category_ids, link_ids, max_hp, max_atk, max_def, base_hp, base_atk, base_def, rainbow_hp, rainbow_atk, rainbow_def, tag');
         
         if (chars) setAllCharacters(chars as Character[]);
 
@@ -199,7 +200,8 @@ export const TeamBuilder: React.FC = () => {
     if (searchTerm.trim()) {
       list = list.filter(c => 
         c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        c.subname?.toLowerCase().includes(searchTerm.toLowerCase())
+        c.subname?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (c.tag && c.tag.toLowerCase().includes(searchTerm.toLowerCase()))
       );
     }
 

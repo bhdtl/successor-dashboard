@@ -136,6 +136,24 @@ for card in detailed_cards:
     active_effect = card.get("active_skill_effect")
     active_cond = card.get("active_skill_condition")
     
+    # Construct base keywords search tag
+    base_keywords = []
+    awk_data = card.get("awakening_data") or []
+    for stage in awk_data:
+        stage_id = stage.get("id")
+        if stage_id and stage_id != cid:
+            base_keywords.append(str(stage_id))
+            if stage.get("name"):
+                base_keywords.append(stage.get("name"))
+            if stage.get("subname"):
+                base_keywords.append(stage.get("subname"))
+                
+    orig_tag = card.get("tag") or "Summonable"
+    if base_keywords:
+        tag_value = f"{orig_tag} | Base: {' / '.join(base_keywords)}"
+    else:
+        tag_value = orig_tag
+
     payload = {
         "id": cid,
         "name": card.get("name"),
@@ -161,7 +179,7 @@ for card in detailed_cards:
         "rainbow_hp": rainbow_hp,
         "rainbow_atk": rainbow_atk,
         "rainbow_def": rainbow_def,
-        "tag": card.get("tag") or "Summonable"
+        "tag": tag_value
     }
     
     updated_cards.append(payload)
