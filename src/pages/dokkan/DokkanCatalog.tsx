@@ -18,6 +18,27 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://sudscqbmhbpgmwibnkco.supabase.co';
 
+const CardImage: React.FC<{ src: string; alt: string; name: string; className?: string }> = ({ src, alt, name, className }) => {
+  const [error, setError] = useState(false);
+  
+  return error ? (
+    <div className="text-center font-extrabold text-2xl text-gray-600 uppercase select-none">
+      {name.substring(0, 2)}
+    </div>
+  ) : (
+    <img
+      src={src}
+      alt={alt}
+      loading="lazy"
+      onError={(e) => {
+        console.error("Failed to load thumbnail:", src, e);
+        setError(true);
+      }}
+      className={className || "w-[90%] h-[90%] object-contain"}
+    />
+  );
+};
+
 // Constant mappings derived from dataset exploration
 export const ELEMENT_MAP: Record<number, { type: 'AGL' | 'TEQ' | 'INT' | 'STR' | 'PHY'; class: 'Super' | 'Extreme'; color: string; border: string; label: string }> = {
   10: { type: 'AGL', class: 'Super', color: 'bg-blue-500', border: 'border-blue-400', label: 'Super AGL' },
@@ -423,22 +444,10 @@ export const DokkanCatalog: React.FC = () => {
 
               {/* Character Artwork */}
               <div className="w-full aspect-square relative rounded-xl overflow-hidden bg-[#0B0F19] flex items-center justify-center border border-[#23324C]/60 mb-3.5 group-hover:shadow-md transition-shadow">
-                <img
+                <CardImage
                   src={thumbUrl}
                   alt={char.name}
-                  loading="lazy"
-                  className="w-[90%] h-[90%] object-contain"
-                  onError={(e) => {
-                    // Fallback to initials if image doesn't load
-                    e.currentTarget.style.display = 'none';
-                    const parent = e.currentTarget.parentElement;
-                    if (parent) {
-                      const div = document.createElement('div');
-                      div.className = 'text-center font-extrabold text-2xl text-gray-600 uppercase';
-                      div.innerText = char.name.substring(0, 2);
-                      parent.appendChild(div);
-                    }
-                  }}
+                  name={char.name}
                 />
                 
                 {/* In Box checkmark overlay */}
@@ -545,9 +554,10 @@ export const DokkanCatalog: React.FC = () => {
                 {/* Header Profile */}
                 <div className="flex flex-col sm:flex-row gap-6 items-start">
                   <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl bg-[#0B0F19] border border-[#23324C] flex items-center justify-center p-2 shrink-0">
-                    <img
+                    <CardImage
                       src={`${supabaseUrl}/storage/v1/object/public/character-thumbnails/card_${selectedChar.id}_thumb.png`}
                       alt={selectedChar.name}
+                      name={selectedChar.name}
                       className="w-full h-full object-contain"
                     />
                   </div>
