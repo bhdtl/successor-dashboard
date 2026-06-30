@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { supabase, getDokkanThumbUrl } from '../../lib/supabase';
+import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
-import { ELEMENT_MAP, RARITY_MAP } from './DokkanCatalog';
+import { ELEMENT_MAP } from './DokkanCatalog';
+import { DokkanCard } from '../../components/DokkanCard';
 import { 
   FolderHeart, 
   Trash2, 
@@ -191,7 +192,6 @@ export const DokkanBox: React.FC = () => {
             if (!char) return null;
 
             const elInfo = ELEMENT_MAP[char.element] || { type: 'AGL', class: 'Super', color: 'bg-gray-500', border: 'border-gray-400', label: 'Unknown' };
-            const thumbUrl = getDokkanThumbUrl(char.id);
 
             return (
               <motion.div
@@ -208,16 +208,13 @@ export const DokkanBox: React.FC = () => {
                 }`} />
 
                 {/* Left side: Artwork thumb */}
-                <div className="w-20 h-20 rounded-xl bg-[#0B0F19] border border-[#23324C]/60 flex items-center justify-center p-1.5 shrink-0 relative">
-                  <img
-                    src={thumbUrl}
-                    alt={char.name}
-                    className="w-full h-full object-contain"
-                  />
-                  <span className="absolute bottom-1 right-1 px-1 py-0.2 rounded bg-black/70 border border-gray-800 text-[8px] font-extrabold text-gray-300">
-                    {RARITY_MAP[char.rarity]}
-                  </span>
-                </div>
+                <DokkanCard
+                  cardId={char.id}
+                  name={char.name}
+                  rarity={char.rarity}
+                  element={char.element}
+                  size="md"
+                />
 
                 {/* Right side: Information */}
                 <div className="flex-1 min-w-0 flex flex-col justify-between space-y-2">
@@ -283,13 +280,13 @@ export const DokkanBox: React.FC = () => {
               <div className="p-8 space-y-6">
                 {/* Header Profile */}
                 <div className="flex gap-4 items-center">
-                  <div className="w-16 h-16 rounded-xl bg-[#0B0F19] border border-[#23324C] flex items-center justify-center p-1 shrink-0">
-                    <img
-                      src={getDokkanThumbUrl(editingItem.card_id)}
-                      alt={editingItem.character?.name}
-                      className="w-full h-full object-contain"
-                    />
-                  </div>
+                  <DokkanCard
+                    cardId={editingItem.card_id}
+                    name={editingItem.character?.name || ''}
+                    rarity={editingItem.character?.rarity || 3}
+                    element={editingItem.character?.element || 10}
+                    size="md"
+                  />
                   <div>
                     <p className="text-xs font-semibold text-emerald-400">{editingItem.character?.subname}</p>
                     <h3 className="text-lg font-extrabold text-white tracking-tight leading-tight">{editingItem.character?.name}</h3>

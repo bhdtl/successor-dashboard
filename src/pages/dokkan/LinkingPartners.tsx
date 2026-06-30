@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { supabase, getDokkanThumbUrl } from '../../lib/supabase';
+import { supabase } from '../../lib/supabase';
 import { ELEMENT_MAP, RARITY_MAP } from './DokkanCatalog';
+import { DokkanCard } from '../../components/DokkanCard';
 import linksData from '../../data/links.json';
 import { 
   Sparkles, 
@@ -141,25 +142,23 @@ export const LinkingPartners: React.FC = () => {
         {searchResults.length > 0 && (
           <div className="absolute top-full left-0 right-0 mt-2 bg-[#161F30] border border-[#23324C] rounded-2xl overflow-hidden shadow-2xl">
             {searchResults.map((char) => {
-              const elInfo = ELEMENT_MAP[char.element] || { type: 'AGL', color: 'bg-gray-500', label: 'Unknown' };
-              const thumbUrl = getDokkanThumbUrl(char.id);
-
               return (
                 <button
                   key={char.id}
                   onClick={() => handleSelectChar(char)}
                   className="w-full text-left px-5 py-3 hover:bg-[#1C283F] border-b border-[#23324C]/60 last:border-0 flex items-center gap-3 transition-colors"
                 >
-                  <div className="w-10 h-10 rounded-lg bg-[#0B0F19] border border-[#23324C]/60 flex items-center justify-center p-0.5 shrink-0">
-                    <img src={thumbUrl} alt={char.name} className="w-full h-full object-contain" />
-                  </div>
+                  <DokkanCard
+                    cardId={char.id}
+                    name={char.name}
+                    rarity={char.rarity}
+                    element={char.element}
+                    size="sm"
+                  />
                   <div className="flex-1 min-w-0">
                     <p className="text-[10px] font-semibold text-gray-400 truncate leading-none">{char.subname}</p>
                     <p className="text-sm font-bold text-white truncate mt-0.5">{char.name}</p>
                   </div>
-                  <span className={`px-2 py-0.5 rounded text-[8px] font-extrabold text-white tracking-wider ${elInfo.color}`}>
-                    {elInfo.type}
-                  </span>
                 </button>
               );
             })}
@@ -177,13 +176,13 @@ export const LinkingPartners: React.FC = () => {
               <div className="absolute top-0 left-0 right-0 h-1.5 bg-indigo-500" />
               
               <div className="flex flex-col items-center text-center space-y-3 pt-2">
-                <div className="w-24 h-24 rounded-2xl bg-[#0B0F19] border border-[#23324C] flex items-center justify-center p-2">
-                  <img
-                    src={getDokkanThumbUrl(selectedChar.id)}
-                    alt={selectedChar.name}
-                    className="w-full h-full object-contain"
-                  />
-                </div>
+                <DokkanCard
+                  cardId={selectedChar.id}
+                  name={selectedChar.name}
+                  rarity={selectedChar.rarity}
+                  element={selectedChar.element}
+                  size="lg"
+                />
                 <div className="space-y-1">
                   <p className="text-xs font-semibold text-indigo-400">{selectedChar.subname}</p>
                   <h4 className="font-extrabold text-lg text-white leading-tight">{selectedChar.name}</h4>
@@ -225,7 +224,6 @@ export const LinkingPartners: React.FC = () => {
               {partners.map((partner, index) => {
                 const char = partner.character;
                 const elInfo = ELEMENT_MAP[char.element] || { type: 'AGL', color: 'bg-gray-500', label: 'Unknown' };
-                const thumbUrl = getDokkanThumbUrl(char.id);
 
                 return (
                   <motion.div
@@ -240,9 +238,13 @@ export const LinkingPartners: React.FC = () => {
                       <span className="text-xs font-black text-gray-500 w-5 shrink-0">#{index + 1}</span>
 
                       {/* Artwork thumbnail */}
-                      <div className="w-12 h-12 rounded-xl bg-[#0B0F19] border border-[#23324C]/60 flex items-center justify-center p-1 shrink-0">
-                        <img src={thumbUrl} alt={char.name} className="w-full h-full object-contain" />
-                      </div>
+                      <DokkanCard
+                        cardId={char.id}
+                        name={char.name}
+                        rarity={char.rarity}
+                        element={char.element}
+                        size="sm"
+                      />
 
                       {/* Info */}
                       <div className="min-w-0">

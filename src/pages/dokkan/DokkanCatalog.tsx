@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { supabase, getDokkanThumbUrl } from '../../lib/supabase';
+import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
+import { DokkanCard } from '../../components/DokkanCard';
 import categoriesData from '../../data/categories.json';
 import linksData from '../../data/links.json';
 import { 
@@ -16,27 +17,6 @@ import {
   ChevronDown
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-
-const CardImage: React.FC<{ src: string; alt: string; name: string; className?: string }> = ({ src, alt, name, className }) => {
-  const [error, setError] = useState(false);
-  
-  return error ? (
-    <div className="text-center font-extrabold text-2xl text-gray-600 uppercase select-none">
-      {name.substring(0, 2)}
-    </div>
-  ) : (
-    <img
-      src={src}
-      alt={alt}
-      loading="lazy"
-      onError={(e) => {
-        console.error("Failed to load thumbnail:", src, e);
-        setError(true);
-      }}
-      className={className || "w-[90%] h-[90%] object-contain"}
-    />
-  );
-};
 
 // Constant mappings derived from dataset exploration
 export const ELEMENT_MAP: Record<number, { type: 'AGL' | 'TEQ' | 'INT' | 'STR' | 'PHY'; class: 'Super' | 'Extreme'; color: string; border: string; label: string }> = {
@@ -417,7 +397,6 @@ export const DokkanCatalog: React.FC = () => {
         {characters.map((char) => {
           const elInfo = ELEMENT_MAP[char.element] || { type: 'AGL', class: 'Super', color: 'bg-gray-500', border: 'border-gray-400', label: 'Unknown' };
           const inBox = boxIds.includes(char.id);
-          const thumbUrl = getDokkanThumbUrl(char.id);
 
           return (
             <motion.div
@@ -442,19 +421,21 @@ export const DokkanCatalog: React.FC = () => {
               </div>
 
               {/* Character Artwork */}
-              <div className="w-full aspect-square relative rounded-xl overflow-hidden bg-[#0B0F19] flex items-center justify-center border border-[#23324C]/60 mb-3.5 group-hover:shadow-md transition-shadow">
-                <CardImage
-                  src={thumbUrl}
-                  alt={char.name}
-                  name={char.name}
-                />
-                
-                {/* In Box checkmark overlay */}
-                {inBox && (
-                  <div className="absolute top-1 left-1 bg-emerald-500 rounded-full p-1 border border-[#0B0F19] shadow-md">
-                    <Check className="w-3.5 h-3.5 text-white" />
-                  </div>
-                )}
+              <div className="flex justify-center mb-3.5">
+                <div className="relative">
+                  <DokkanCard
+                    cardId={char.id}
+                    name={char.name}
+                    rarity={char.rarity}
+                    element={char.element}
+                    size="lg"
+                  />
+                  {inBox && (
+                    <div className="absolute top-0 left-0 bg-emerald-500 rounded-full p-1 border border-[#0B0F19] shadow-md z-20">
+                      <Check className="w-3.5 h-3.5 text-white" />
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* Info */}
@@ -552,14 +533,14 @@ export const DokkanCatalog: React.FC = () => {
               <div className="p-8 overflow-y-auto space-y-6">
                 {/* Header Profile */}
                 <div className="flex flex-col sm:flex-row gap-6 items-start">
-                  <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl bg-[#0B0F19] border border-[#23324C] flex items-center justify-center p-2 shrink-0">
-                    <CardImage
-                      src={getDokkanThumbUrl(selectedChar.id)}
-                      alt={selectedChar.name}
-                      name={selectedChar.name}
-                      className="w-full h-full object-contain"
-                    />
-                  </div>
+                  <DokkanCard
+                    cardId={selectedChar.id}
+                    name={selectedChar.name}
+                    rarity={selectedChar.rarity}
+                    element={selectedChar.element}
+                    size="xl"
+                    className="shrink-0"
+                  />
                   <div className="space-y-2">
                     <div className="flex flex-wrap gap-2 items-center">
                       <span className={`px-2.5 py-0.5 rounded text-[10px] font-extrabold text-white tracking-wider ${

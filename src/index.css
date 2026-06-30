@@ -109,3 +109,24 @@ body {
   flex-direction: column;
   min-height: 100vh;
 }
+
+/* Dokkan Battle style crop and animations */
+.clip-dokkan {
+  clip-path: polygon(12% 0, 88% 0, 100% 12%, 100% 88%, 88% 100%, 12% 100%, 0 88%, 0 12%);
+}
+
+@keyframes lr-glow {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.animate-lr-glow {
+  animation: lr-glow 4s linear infinite;
+}

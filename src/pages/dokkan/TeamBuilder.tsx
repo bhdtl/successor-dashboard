@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { supabase, getDokkanThumbUrl } from '../../lib/supabase';
+import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
-import { ELEMENT_MAP, RARITY_MAP } from './DokkanCatalog';
+import { ELEMENT_MAP } from './DokkanCatalog';
+import { DokkanCard } from '../../components/DokkanCard';
 import categoriesData from '../../data/categories.json';
 import linksData from '../../data/links.json';
 import { 
@@ -246,7 +247,6 @@ export const TeamBuilder: React.FC = () => {
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-4">
             {team.map((slot, idx) => {
               const char = slot.character;
-              const thumbUrl = char ? getDokkanThumbUrl(char.id) : '';
 
               return (
                 <div
@@ -271,14 +271,20 @@ export const TeamBuilder: React.FC = () => {
 
                   {/* Character Thumbnail / Add icon */}
                   {char ? (
-                    <div className="w-20 h-20 bg-[#0B0F19] border border-[#23324C]/60 rounded-xl flex items-center justify-center p-1 relative">
-                      <img src={thumbUrl} alt={char.name} className="w-full h-full object-contain" />
+                    <div className="relative">
+                      <DokkanCard
+                        cardId={char.id}
+                        name={char.name}
+                        rarity={char.rarity}
+                        element={char.element}
+                        size="md"
+                      />
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
                           handleRemoveCharacter(idx);
                         }}
-                        className="absolute -top-1.5 -right-1.5 bg-red-500/20 hover:bg-red-500 text-red-400 hover:text-white p-1 rounded-full border border-red-500/30 opacity-0 group-hover:opacity-100 transition-opacity"
+                        className="absolute -top-1.5 -right-1.5 bg-red-500 hover:bg-red-600 text-white p-1 rounded-full border border-[#0B0F19] shadow-md z-20 opacity-0 group-hover:opacity-100 transition-opacity"
                       >
                         <X className="w-3 h-3" />
                       </button>
@@ -431,8 +437,6 @@ export const TeamBuilder: React.FC = () => {
                 {/* Candidates List */}
                 <div className="space-y-2 overflow-y-auto pr-1">
                   {getCandidates().map((char) => {
-                    const elInfo = ELEMENT_MAP[char.element] || { type: 'AGL', color: 'bg-gray-500', label: 'Unknown' };
-                    const thumbUrl = getDokkanThumbUrl(char.id);
 
                     return (
                       <button
@@ -440,20 +444,16 @@ export const TeamBuilder: React.FC = () => {
                         onClick={() => handleSelectCharacter(char)}
                         className="w-full text-left p-3 hover:bg-[#1C283F] bg-[#0B0F19]/30 border border-[#23324C]/60 rounded-2xl flex items-center gap-3 transition-colors group"
                       >
-                        <div className="w-10 h-10 rounded-lg bg-[#0B0F19] border border-[#23324C]/60 flex items-center justify-center p-0.5 shrink-0">
-                          <img src={thumbUrl} alt={char.name} className="w-full h-full object-contain" />
-                        </div>
+                        <DokkanCard
+                          cardId={char.id}
+                          name={char.name}
+                          rarity={char.rarity}
+                          element={char.element}
+                          size="sm"
+                        />
                         <div className="flex-1 min-w-0">
                           <p className="text-[10px] font-semibold text-gray-400 truncate leading-none">{char.subname}</p>
                           <p className="text-xs font-bold text-white truncate mt-0.5 group-hover:text-blue-400 transition-colors">{char.name}</p>
-                        </div>
-                        <div className="flex items-center gap-1.5 shrink-0">
-                          <span className={`px-2 py-0.5 rounded text-[8px] font-extrabold text-white uppercase tracking-wider ${elInfo.color}`}>
-                            {elInfo.type}
-                          </span>
-                          <span className="px-2 py-0.5 rounded bg-gray-800 border border-gray-700 text-[8px] font-extrabold text-gray-300">
-                            {RARITY_MAP[char.rarity]}
-                          </span>
                         </div>
                       </button>
                     );

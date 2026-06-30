@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { supabase, getDokkanThumbUrl } from '../../lib/supabase';
+import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
 import { ELEMENT_MAP } from './DokkanCatalog';
+import { DokkanCard } from '../../components/DokkanCard';
 import { 
   Award, 
   TrendingUp, 
@@ -204,7 +205,6 @@ export const UpgradeAdvisor: React.FC = () => {
                 {recommendations.map((rec) => {
                   const char = rec.character;
                   const elInfo = ELEMENT_MAP[char.element] || { type: 'AGL', color: 'bg-gray-500', label: 'Unknown' };
-                  const thumbUrl = getDokkanThumbUrl(char.id);
 
                   const priorityColors = {
                     CRITICAL: 'bg-red-500/10 text-red-400 border-red-500/25',
@@ -220,9 +220,13 @@ export const UpgradeAdvisor: React.FC = () => {
                     >
                       <div className="flex items-center gap-3.5 min-w-0">
                         {/* Artwork thumbnail */}
-                        <div className="w-12 h-12 rounded-xl bg-[#0B0F19] border border-[#23324C]/60 flex items-center justify-center p-1 shrink-0">
-                          <img src={thumbUrl} alt={char.name} className="w-full h-full object-contain" />
-                        </div>
+                        <DokkanCard
+                          cardId={char.id}
+                          name={char.name}
+                          rarity={char.rarity}
+                          element={char.element}
+                          size="sm"
+                        />
 
                         {/* Info */}
                         <div className="min-w-0">
