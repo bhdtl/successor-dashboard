@@ -99,9 +99,9 @@ export const Layout: React.FC = () => {
 
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        {/* 2. Mobile Top Navbar (md-hidden) */}
-        <header className="md:hidden h-16 bg-[#161F30]/80 backdrop-blur-lg border-b border-[#23324C] flex items-center justify-between px-4 z-30 shrink-0">
-          <div className="flex items-center gap-2.5">
+        {/* 2. Mobile Top Navbar (md-hidden) - adjusted for iOS Safe Areas & Notch */}
+        <header className="md:hidden h-[calc(4.5rem+env(safe-area-inset-top,0px))] bg-[#161F30]/80 backdrop-blur-lg border-b border-[#23324C] flex items-end justify-between px-4 pb-3 pt-[env(safe-area-inset-top,0px)] z-30 shrink-0">
+          <div className="flex items-center gap-2.5 mb-0.5">
             <div className="w-8 h-8 rounded-lg bg-[#0B0F19] border border-[#23324C]/60 flex items-center justify-center p-0.5 shadow-md">
               <img src={logoImg} className="w-full h-full object-contain rounded-md" alt="Successor Logo" />
             </div>
@@ -114,7 +114,7 @@ export const Layout: React.FC = () => {
           <button
             onClick={signOut}
             title="Logout"
-            className="p-2.5 rounded-xl bg-red-500/10 hover:bg-red-500/20 border border-red-500/25 text-red-400 transition-all"
+            className="p-2.5 rounded-xl bg-red-500/10 hover:bg-red-500/20 border border-red-500/25 text-red-400 transition-all mb-0.5"
           >
             <LogOut className="w-4.5 h-4.5" />
           </button>

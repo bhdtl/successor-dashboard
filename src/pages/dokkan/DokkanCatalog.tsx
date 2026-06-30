@@ -396,7 +396,7 @@ export const DokkanCatalog: React.FC = () => {
         {characters.map((char) => {
           const elInfo = ELEMENT_MAP[char.element] || { type: 'AGL', class: 'Super', color: 'bg-gray-500', border: 'border-gray-400', label: 'Unknown' };
           const inBox = boxIds.includes(char.id);
-          const thumbUrl = `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/character-thumbnails/card_${char.id}_thumb.png`;
+          const thumbUrl = `${supabaseUrl}/storage/v1/object/public/character-thumbnails/card_${char.id}_thumb.png`;
 
           return (
             <motion.div
@@ -545,7 +545,7 @@ export const DokkanCatalog: React.FC = () => {
                 <div className="flex flex-col sm:flex-row gap-6 items-start">
                   <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl bg-[#0B0F19] border border-[#23324C] flex items-center justify-center p-2 shrink-0">
                     <img
-                      src={`${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/character-thumbnails/card_${selectedChar.id}_thumb.png`}
+                      src={`${supabaseUrl}/storage/v1/object/public/character-thumbnails/card_${selectedChar.id}_thumb.png`}
                       alt={selectedChar.name}
                       className="w-full h-full object-contain"
                     />
@@ -659,3 +659,5 @@ export const DokkanCatalog: React.FC = () => {
     </div>
   );
 };
+
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://sudscqbmhbpgmwibnkco.supabase.co';

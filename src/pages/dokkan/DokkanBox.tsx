@@ -191,7 +191,7 @@ export const DokkanBox: React.FC = () => {
             if (!char) return null;
 
             const elInfo = ELEMENT_MAP[char.element] || { type: 'AGL', class: 'Super', color: 'bg-gray-500', border: 'border-gray-400', label: 'Unknown' };
-            const thumbUrl = `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/character-thumbnails/card_${char.id}_thumb.png`;
+            const thumbUrl = `${supabaseUrl}/storage/v1/object/public/character-thumbnails/card_${char.id}_thumb.png`;
 
             return (
               <motion.div
@@ -285,7 +285,7 @@ export const DokkanBox: React.FC = () => {
                 <div className="flex gap-4 items-center">
                   <div className="w-16 h-16 rounded-xl bg-[#0B0F19] border border-[#23324C] flex items-center justify-center p-1 shrink-0">
                     <img
-                      src={`${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/character-thumbnails/card_${editingItem.card_id}_thumb.png`}
+                      src={`${supabaseUrl}/storage/v1/object/public/character-thumbnails/card_${editingItem.card_id}_thumb.png`}
                       alt={editingItem.character?.name}
                       className="w-full h-full object-contain"
                     />
@@ -396,3 +396,5 @@ export const DokkanBox: React.FC = () => {
     </div>
   );
 };
+
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://sudscqbmhbpgmwibnkco.supabase.co';
