@@ -70,7 +70,7 @@ Max Base Stats: HP: ${char.max_hp}, ATK: ${char.max_atk}, DEF: ${char.max_def}`;
           "X-Title": "Dokkan SaaS Analytics Engine"
         },
         body: JSON.stringify({
-          model: "meta-llama/llama-3-70b-instruct", // Advanced intelligence model with extremely optimized token rates
+          model: "xiaomi/mimo-v2.5", // Switched to Xiaomi Mimo per user request
           messages: [
             { role: "system", content: systemPrompt },
             { role: "user", content: userPrompt }
@@ -80,6 +80,12 @@ Max Base Stats: HP: ${char.max_hp}, ATK: ${char.max_atk}, DEF: ${char.max_def}`;
       });
 
       const jsonRes = await response.json();
+      
+      // New Error Inspection Feature: Logs official API rejections out directly
+      if (jsonRes.error) {
+        console.error("OpenRouter API Error Object Detected:", JSON.stringify(jsonRes.error, null, 2));
+      }
+
       if (!jsonRes.choices || jsonRes.choices.length === 0) {
         throw new Error("Empty completion returned from OpenRouter API.");
       }
