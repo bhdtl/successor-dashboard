@@ -86,6 +86,7 @@ export const DokkanCatalog: React.FC = () => {
   // Modal details state
   const [selectedChar, setSelectedChar] = useState<Character | null>(null);
   const [boxActionLoading, setBoxActionLoading] = useState<number | null>(null);
+  const [statTab, setStatTab] = useState<'base' | 'max' | 'rainbow'>('max');
 
   const pageSize = 48;
 
@@ -557,23 +558,47 @@ export const DokkanCatalog: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Grid stats */}
-                {selectedChar.max_hp !== null && selectedChar.max_atk !== null && selectedChar.max_def !== null && (
-                  <div className="grid grid-cols-3 gap-4 bg-[#0B0F19]/60 p-4 rounded-2xl border border-[#23324C]">
-                    <div className="text-center space-y-0.5">
-                      <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Max HP</span>
-                      <p className="text-lg font-black text-white">{selectedChar.max_hp.toLocaleString()}</p>
-                    </div>
-                    <div className="text-center space-y-0.5 border-x border-[#23324C]">
-                      <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Max ATK</span>
-                      <p className="text-lg font-black text-white">{selectedChar.max_atk.toLocaleString()}</p>
-                    </div>
-                    <div className="text-center space-y-0.5">
-                      <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Max DEF</span>
-                      <p className="text-lg font-black text-white">{selectedChar.max_def.toLocaleString()}</p>
-                    </div>
+                {/* Grid stats & Level Toggles */}
+                <div className="space-y-3">
+                  <div className="flex gap-2 bg-[#0B0F19]/40 p-1 rounded-xl border border-[#23324C]/60 w-fit">
+                    {(['base', 'max', 'rainbow'] as const).map((tab) => (
+                      <button
+                        key={tab}
+                        onClick={() => setStatTab(tab)}
+                        className={`px-3 py-1 text-[10px] font-extrabold uppercase rounded-lg transition-all ${
+                          statTab === tab
+                            ? 'bg-blue-600 text-white shadow-md'
+                            : 'text-gray-400 hover:text-white'
+                        }`}
+                      >
+                        {tab === 'base' ? 'Base Lvl 1' : tab === 'max' ? 'Max Lvl (EZA)' : 'Rainbow (100%)'}
+                      </button>
+                    ))}
                   </div>
-                )}
+
+                  {selectedChar.max_hp !== null && (
+                    <div className="grid grid-cols-3 gap-4 bg-[#0B0F19]/60 p-4 rounded-2xl border border-[#23324C]">
+                      <div className="text-center space-y-0.5">
+                        <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">HP</span>
+                        <p className="text-lg font-black text-white">
+                          {(statTab === 'base' ? selectedChar.base_hp : statTab === 'max' ? selectedChar.max_hp : selectedChar.rainbow_hp)?.toLocaleString() ?? '-'}
+                        </p>
+                      </div>
+                      <div className="text-center space-y-0.5 border-x border-[#23324C]">
+                        <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">ATK</span>
+                        <p className="text-lg font-black text-white">
+                          {(statTab === 'base' ? selectedChar.base_atk : statTab === 'max' ? selectedChar.max_atk : selectedChar.rainbow_atk)?.toLocaleString() ?? '-'}
+                        </p>
+                      </div>
+                      <div className="text-center space-y-0.5">
+                        <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">DEF</span>
+                        <p className="text-lg font-black text-white">
+                          {(statTab === 'base' ? selectedChar.base_def : statTab === 'max' ? selectedChar.max_def : selectedChar.rainbow_def)?.toLocaleString() ?? '-'}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
 
                 {/* Skills Container */}
                 <div className="space-y-4">
