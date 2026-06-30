@@ -91,6 +91,18 @@ export const TeamBuilder: React.FC = () => {
     fetchData();
   }, [user]);
 
+  // Lock background scroll when character selection modal is open
+  useEffect(() => {
+    if (activeSlotIdx !== null) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [activeSlotIdx]);
+
   // Helper: check if a character matches a leader skill
   const evaluateLeaderSkill = (leader: Character, target: Character): { matched: boolean; pct: number } => {
     if (leader.id === target.id) return { matched: true, pct: 170 }; // default self-boost

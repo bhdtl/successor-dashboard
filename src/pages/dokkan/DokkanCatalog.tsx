@@ -104,6 +104,18 @@ export const DokkanCatalog: React.FC = () => {
     fetchUserBox();
   }, [searchTerm, selectedRarities, selectedTypes, selectedClasses, selectedCategory]);
 
+  // Lock background scroll when modal is open
+  useEffect(() => {
+    if (selectedChar) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [selectedChar]);
+
   const fetchCharacters = async (currentPage: number, reset = false) => {
     setLoading(true);
     try {
