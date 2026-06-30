@@ -14,7 +14,8 @@ import {
   Sparkles,
   HelpCircle,
   TrendingUp,
-  AlertTriangle
+  AlertTriangle,
+  Award
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -102,6 +103,44 @@ export const TeamBuilder: React.FC = () => {
       document.body.style.overflow = '';
     };
   }, [activeSlotIdx]);
+
+  // Striktes 2026 Meta Tier-Bewertungssystem
+  const getStrictMetaTier = (char: Character) => {
+    const defense = char.max_def || 0;
+    const attack = char.max_atk || 0;
+    const skillText = (char.leader_skill || '').toLowerCase();
+    
+    // In der 2026er Meta ist DEF & Schadensreduktion alles. ATK skaliert geringer.
+    let score = (defense * 1.5) + (attack * 0.5);
+    
+    // Seltenheits-Bonus (Klassische alte URs fallen drastisch ab gegenüber LRs/EZAs)
+    if (char.rarity >= 5) {
+      score += 15000;
+    }
+    
+    // Leader Skill Check für moderne Meta-Relevanz
+    if (skillText.includes('200%')) {
+      score += 25000;
+    } else if (skillText.includes('170%')) {
+      score += 10000;
+    } else {
+      // Brutaler Abzug für veraltete Sub-170% Leader Skills oder alte Füller-URs
+      score -= 20000;
+    }
+
+    // Extrem strenge Einstufungsgrenzen
+    if (score > 45000) {
+      return { label: 'Z+ Tier (Meta King)', style: 'text-red-400 bg-red-500/10 border-red-500/20', rawScore: score };
+    } else if (score > 35000) {
+      return { label: 'S Tier (Top Meta)', style: 'text-amber-400 bg-amber-400/10 border-amber-400/20', rawScore: score };
+    } else if (score > 20000) {
+      return { label: 'A Tier (Viable Sub)', style: 'text-purple-400 bg-purple-400/10 border-purple-400/20', rawScore: score };
+    } else if (score > 5000) {
+      return { label: 'B Tier (Niche Choice)', style: 'text-blue-400 bg-blue-400/10 border-blue-400/20', rawScore: score };
+    } else {
+      return { label: 'F Tier (Outclassed)', style: 'text-gray-500 bg-gray-800 border-gray-700', rawScore: score };
+    }
+  };
 
   // Helper: check if a character matches a leader skill
   const evaluateLeaderSkill = (leader: Character, target: Character): { matched: boolean; pct: number } => {
@@ -203,7 +242,7 @@ export const TeamBuilder: React.FC = () => {
     });
   };
 
-  // Filter and SORT candidates by link synergy + leader boost
+  // Filter und SORTIERE Kandidaten nach Meta-Stärke + Link-Synergie + Leader Boost
   const getCandidates = () => {
     let list = onlyBox
       ? allCharacters.filter(c => boxIds.includes(c.id))
@@ -221,30 +260,33 @@ export const TeamBuilder: React.FC = () => {
       const leader = team[0].character;
       const friend = team[6].character;
 
-      // Map candidates to add sorting metadata
+      // Berechne Metadaten für exakte Sortierung
       const scoredList = list.map(c => {
-        // Calculate shared links with other team members
         const otherMembers = team.filter((s, idx) => s.character && idx !== activeSlotIdx).map(s => s.character) as Character[];
         const sharedLinksCount = otherMembers.length > 0
           ? (c.link_ids || []).filter(lid => otherMembers.some(m => m.link_ids?.includes(lid))).length
           : 0;
 
-        // Calculate leader boosts
         const lBoost = leader ? evaluateLeaderSkill(leader, c).pct : 0;
         const fBoost = friend ? evaluateLeaderSkill(friend, c).pct : 0;
         const totalBoost = lBoost + fBoost;
+        
+        // Hole strikten Meta Score
+        const metaRating = getStrictMetaTier(c);
 
         return {
           char: c,
           sharedLinksCount,
           totalBoost,
+          metaScore: metaRating.rawScore,
           sameName: hasSameNameWarning(c, activeSlotIdx)
         };
       });
 
-      // Sort by: No same-name penalty first, then Shared Links desc, then Leader Boost desc
+      // Sortierung: Erlaubte Namen zuerst, dann strikt nach Meta-Power, danach Links & Leader Boost
       scoredList.sort((a, b) => {
         if (a.sameName !== b.sameName) return a.sameName ? 1 : -1;
+        if (Math.abs(a.metaScore - b.metaScore) > 1000) return b.metaScore - a.metaScore;
         if (a.sharedLinksCount !== b.sharedLinksCount) return b.sharedLinksCount - a.sharedLinksCount;
         return b.totalBoost - a.totalBoost;
       });
@@ -265,28 +307,34 @@ export const TeamBuilder: React.FC = () => {
       .filter(c => c.id !== char.id && c.name !== char.name) // Skip same character/name
       .map(c => {
         const shared = (c.link_ids || []).filter(lid => char.link_ids?.includes(lid));
+        const metaRating = getStrictMetaTier(c);
         return {
           char: c,
-          sharedLinks: shared.map(lid => linksData.find(l => l.id === lid)?.name || `Link ${lid}`)
+          sharedLinks: shared.map(lid => linksData.find(l => l.id === lid)?.name || `Link ${lid}`),
+          metaScore: metaRating.rawScore
         };
       })
-      .sort((a, b) => b.sharedLinks.length - a.sharedLinks.length);
+      // Priorität auf Link-Anzahl, bei Gleichstand entscheidet die strikte Meta-Eignung
+      .sort((a, b) => {
+        if (a.sharedLinks.length !== b.sharedLinks.length) {
+          return b.sharedLinks.length - a.sharedLinks.length;
+        }
+        return b.metaScore - a.metaScore;
+      });
 
     return scored.slice(0, limit);
   };
 
-  // Autobuild Team around selected leader
+  // Autobuild Team um den gewählten Leader herum mit extremen Meta-Filtern
   const handleAutobuild = () => {
     const leader = team[0].character;
     if (!leader) return;
 
-    // Parse categories from leader skill text
     const skillText = (leader.leader_skill || '').toLowerCase();
     const leaderCatIds = categoriesData
       .filter(cat => skillText.includes(cat.name.toLowerCase()))
       .map(cat => cat.id);
 
-    // Candidates inside user's Box
     const candidates = allCharacters.filter(c => boxIds.includes(c.id) && c.id !== leader.id);
 
     if (candidates.length === 0) {
@@ -294,22 +342,22 @@ export const TeamBuilder: React.FC = () => {
       return;
     }
 
-    // Score candidates
+    // Gewichtung filtert unbrauchbare "Mid-Tier" Einheiten aggressiv heraus
     const scored = candidates.map(c => {
       const leaderBoost = evaluateLeaderSkill(leader, c).pct;
       const sharedLinks = (c.link_ids || []).filter(lid => leader.link_ids?.includes(lid)).length;
       const matchesCategory = c.category_ids?.some(cid => leaderCatIds.includes(cid)) ? 1 : 0;
+      const metaRating = getStrictMetaTier(c);
       
-      // Calculate score prioritizing leader boost and links
-      const score = (leaderBoost * 10) + (sharedLinks * 50) + (matchesCategory * 100);
+      const score = (leaderBoost * 15) + (sharedLinks * 60) + (matchesCategory * 120) + (metaRating.rawScore * 0.05);
 
       return { char: c, score, name: c.name };
     });
 
-    // Sort by score desc
+    // Sortierung nach Gesamt-Score
     scored.sort((a, b) => b.score - a.score);
 
-    // Pick top 5 unique names
+    // Filter nach 5 eindeutigen Namen
     const selected: Character[] = [];
     const usedNames = new Set<string>([leader.name]);
 
@@ -321,14 +369,12 @@ export const TeamBuilder: React.FC = () => {
       if (selected.length >= 5) break;
     }
 
-    // Assign to team slots
+    // Plätze im Team zuweisen
     setTeam(prev => {
       const copy = [...prev];
-      // Assign sub-units
       for (let i = 1; i <= 5; i++) {
         copy[i] = { ...copy[i], character: selected[i - 1] || null };
       }
-      // Assign Friend Leader (preferably same as leader)
       copy[6] = { ...copy[6], character: leader };
       return copy;
     });
@@ -428,6 +474,7 @@ export const TeamBuilder: React.FC = () => {
               const hasWarn = char ? hasSameNameWarning(char, idx) : false;
               const boostVal = char ? (analysis.boosts.find(b => b.member.id === char.id)?.total ?? 0) : 0;
               const activeLinksCount = char ? getSharedLinksWithTeam(char, idx).length : 0;
+              const metaInfo = char ? getStrictMetaTier(char) : null;
 
               return (
                 <div
@@ -436,7 +483,7 @@ export const TeamBuilder: React.FC = () => {
                     setHighlightedSlotIdx(idx);
                     setActiveSlotIdx(idx);
                   }}
-                  className={`bg-[#161F30]/80 border rounded-2xl p-4 flex flex-col items-center justify-between min-h-[240px] transition-all cursor-pointer relative group ${
+                  className={`bg-[#161F30]/80 border rounded-2xl p-4 flex flex-col items-center justify-between min-h-[260px] transition-all cursor-pointer relative group ${
                     highlightedSlotIdx === idx 
                       ? 'border-blue-500 ring-1 ring-blue-500/20 bg-[#161F30]' 
                       : char 
@@ -493,6 +540,12 @@ export const TeamBuilder: React.FC = () => {
                     <div className="text-center w-full mt-2.5 space-y-1">
                       <p className="text-[10px] font-extrabold text-white truncate px-1 leading-tight">{char.name}</p>
                       
+                      {metaInfo && (
+                        <p className={`text-[8px] font-black tracking-wide border rounded px-1 py-0.2 mx-auto w-max leading-none my-0.5 ${metaInfo.style}`}>
+                          {metaInfo.label}
+                        </p>
+                      )}
+
                       <div className="flex flex-col gap-0.5 mt-1">
                         <span className={`text-[8px] font-black px-1.5 py-0.2 rounded mx-auto ${
                           boostVal > 0 ? 'text-emerald-400 bg-emerald-500/10' : 'text-red-400 bg-red-500/10'
@@ -555,9 +608,12 @@ export const TeamBuilder: React.FC = () => {
                       size="sm"
                     />
                   </div>
-                  <div className="min-w-0">
+                  <div className="min-w-0 flex-1">
                     <span className="text-[9px] font-black uppercase text-blue-400 leading-none">Slot {highlightedSlotIdx + 1} Profile</span>
                     <h4 className="text-sm font-bold text-white truncate leading-tight mt-0.5">{highlightedChar.name}</h4>
+                    <span className={`inline-block text-[8px] font-black border rounded px-1.5 py-0.2 mt-1 ${getStrictMetaTier(highlightedChar).style}`}>
+                      {getStrictMetaTier(highlightedChar).label}
+                    </span>
                   </div>
                 </div>
 
@@ -584,36 +640,43 @@ export const TeamBuilder: React.FC = () => {
                   </div>
 
                   <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
-                    {getLinkingPartnerRecommendations(highlightedChar, 5).map((item) => (
-                      <div
-                        key={item.char.id}
-                        onClick={() => {
-                          // Find first empty slot or replace active slot if clicked
-                          setTeam(prev => {
-                            const copy = [...prev];
-                            const emptyIdx = copy.findIndex(s => s.character === null);
-                            const targetIdx = emptyIdx !== -1 ? emptyIdx : highlightedSlotIdx;
-                            copy[targetIdx] = { ...copy[targetIdx], character: item.char };
-                            return copy;
-                          });
-                        }}
-                        className="flex items-center gap-3 p-2 bg-[#0B0F19]/40 border border-[#23324C]/40 hover:border-emerald-500/50 hover:bg-[#0B0F19]/80 rounded-xl transition-all cursor-pointer group"
-                      >
-                        <div className="w-8 h-8 shrink-0">
-                          <DokkanCard
-                            cardId={item.char.id}
-                            name={item.char.name}
-                            rarity={item.char.rarity}
-                            element={item.char.element}
-                            size="sm"
-                          />
+                    {getLinkingPartnerRecommendations(highlightedChar, 5).map((item) => {
+                      const partnerMeta = getStrictMetaTier(item.char);
+                      return (
+                        <div
+                          key={item.char.id}
+                          onClick={() => {
+                            setTeam(prev => {
+                              const copy = [...prev];
+                              const emptyIdx = copy.findIndex(s => s.character === null);
+                              const targetIdx = emptyIdx !== -1 ? emptyIdx : highlightedSlotIdx;
+                              copy[targetIdx] = { ...copy[targetIdx], character: item.char };
+                              return copy;
+                            });
+                          }}
+                          className="flex items-center gap-3 p-2 bg-[#0B0F19]/40 border border-[#23324C]/40 hover:border-emerald-500/50 hover:bg-[#0B0F19]/80 rounded-xl transition-all cursor-pointer group"
+                        >
+                          <div className="w-8 h-8 shrink-0">
+                            <DokkanCard
+                              cardId={item.char.id}
+                              name={item.char.name}
+                              rarity={item.char.rarity}
+                              element={item.char.element}
+                              size="sm"
+                            />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-[10px] font-bold text-white truncate leading-tight group-hover:text-emerald-400 transition-colors">{item.char.name}</p>
+                            <div className="flex items-center justify-between gap-2 mt-0.5">
+                              <p className="text-[8px] font-medium text-gray-400 truncate">Shares: {item.sharedLinks.length} Links</p>
+                              <span className={`text-[7px] font-extrabold border rounded px-1 scale-90 origin-right ${partnerMeta.style}`}>
+                                {partnerMeta.label.split(' ')[0]}
+                              </span>
+                            </div>
+                          </div>
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-[10px] font-bold text-white truncate leading-tight group-hover:text-emerald-400 transition-colors">{item.char.name}</p>
-                          <p className="text-[8px] font-medium text-gray-400 truncate mt-0.5">Shares: {item.sharedLinks.length} Links</p>
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               </div>
@@ -650,7 +713,7 @@ export const TeamBuilder: React.FC = () => {
               <div className="p-8 space-y-6 flex flex-col h-full overflow-y-auto">
                 <div className="space-y-1">
                   <h3 className="text-lg font-extrabold text-white">Select Character</h3>
-                  <p className="text-xs text-gray-400">Choose a card. Sorted automatically by synergy & links match.</p>
+                  <p className="text-xs text-gray-400">Choose a card. Sorted automatically by modern tier power, synergy & links match.</p>
                 </div>
 
                 {/* Filter / Search Inputs */}
@@ -708,9 +771,11 @@ export const TeamBuilder: React.FC = () => {
                     const fBoost = friend ? evaluateLeaderSkill(friend, char).pct : 0;
                     const totalBoost = lBoost + fBoost;
                     const hasWarn = hasSameNameWarning(char, activeSlotIdx);
+                    const candidateMeta = getStrictMetaTier(char);
 
                     return (
                       <button
+                        type="button"
                         key={char.id}
                         onClick={() => handleSelectCharacter(char)}
                         className="w-full text-left p-3 hover:bg-[#1C283F] bg-[#0B0F19]/30 border border-[#23324C]/60 rounded-2xl flex items-center gap-3 transition-colors group"
@@ -725,11 +790,16 @@ export const TeamBuilder: React.FC = () => {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between gap-2">
                             <p className="text-[10px] font-semibold text-gray-400 truncate leading-none">{char.subname}</p>
-                            {hasWarn && (
-                              <span className="text-[8px] font-black text-amber-400 bg-amber-500/10 px-1 py-0.2 rounded uppercase">
-                                Same Name
+                            <div className="flex items-center gap-1.5">
+                              <span className={`text-[8px] font-black border rounded px-1.5 py-0.2 tracking-wide uppercase leading-none ${candidateMeta.style}`}>
+                                {candidateMeta.label}
                               </span>
-                            )}
+                              {hasWarn && (
+                                <span className="text-[8px] font-black text-amber-400 bg-amber-500/10 px-1 py-0.2 rounded uppercase leading-none">
+                                  Same Name
+                                </span>
+                              )}
+                            </div>
                           </div>
                           
                           <p className="text-xs font-bold text-white truncate mt-0.5 group-hover:text-blue-400 transition-colors">{char.name}</p>
