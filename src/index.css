@@ -2,6 +2,14 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Apply Apple San Francisco typography & prevent iOS rubber banding issues */
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "SF Pro", "SF Compact", "Inter", "Outfit", sans-serif;
+  background-color: #0B0F19;
+  overflow-x: hidden;
+  -webkit-tap-highlight-color: transparent;
+}
+
 /* Custom Scrollbars */
 ::-webkit-scrollbar {
   width: 6px;
@@ -18,10 +26,84 @@
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #3B82F6;
+  background: #3b82f6;
 }
 
-/* Base styles override */
+/* Hide Scrollbar Utilities */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Apple-inspired Liquid Glass Tab Bar */
+.ios-tab-bar {
+  width: 100%;
+  border-radius: 24px;
+  background: rgba(22, 31, 48, 0.65);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 
+    0 16px 36px rgba(0, 0, 0, 0.5),
+    0 4px 12px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+}
+
+.ios-tab-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  height: 64px;
+  padding: 0 8px;
+}
+
+.ios-tab-item {
+  position: relative;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.ios-tab-item:active {
+  transform: scale(0.95);
+}
+
+.ios-tab-content {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.2s ease;
+}
+
+.ios-tab-active {
+  color: #3b82f6; /* Apple blue */
+  filter: drop-shadow(0 0 4px rgba(59, 130, 246, 0.3));
+}
+
+.ios-tab-inactive {
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.ios-tab-inactive:hover {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.ios-tab-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  line-height: 1;
+}
+
 #root {
   display: flex;
   flex-direction: column;

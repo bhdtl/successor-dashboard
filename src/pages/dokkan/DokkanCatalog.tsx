@@ -396,7 +396,7 @@ export const DokkanCatalog: React.FC = () => {
         {characters.map((char) => {
           const elInfo = ELEMENT_MAP[char.element] || { type: 'AGL', class: 'Super', color: 'bg-gray-500', border: 'border-gray-400', label: 'Unknown' };
           const inBox = boxIds.includes(char.id);
-          const thumbUrl = `https://api.dokkandb.com/assets/character/thumb/card_${char.id}_thumb_folder/card_${char.id}_thumb.png`;
+          const thumbUrl = `https://www.dokkandb.com/assets/character/thumb/card_${char.id}_thumb.png`;
 
           return (
             <motion.div
@@ -545,7 +545,7 @@ export const DokkanCatalog: React.FC = () => {
                 <div className="flex flex-col sm:flex-row gap-6 items-start">
                   <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl bg-[#0B0F19] border border-[#23324C] flex items-center justify-center p-2 shrink-0">
                     <img
-                      src={`https://api.dokkandb.com/assets/character/thumb/card_${selectedChar.id}_thumb_folder/card_${selectedChar.id}_thumb.png`}
+                      src={`https://www.dokkandb.com/assets/character/thumb/card_${selectedChar.id}_thumb.png`}
                       alt={selectedChar.name}
                       className="w-full h-full object-contain"
                     />

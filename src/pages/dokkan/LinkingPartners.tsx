@@ -142,7 +142,7 @@ export const LinkingPartners: React.FC = () => {
           <div className="absolute top-full left-0 right-0 mt-2 bg-[#161F30] border border-[#23324C] rounded-2xl overflow-hidden shadow-2xl">
             {searchResults.map((char) => {
               const elInfo = ELEMENT_MAP[char.element] || { type: 'AGL', color: 'bg-gray-500', label: 'Unknown' };
-              const thumbUrl = `https://api.dokkandb.com/assets/character/thumb/card_${char.id}_thumb_folder/card_${char.id}_thumb.png`;
+              const thumbUrl = `https://www.dokkandb.com/assets/character/thumb/card_${char.id}_thumb.png`;
 
               return (
                 <button
@@ -179,7 +179,7 @@ export const LinkingPartners: React.FC = () => {
               <div className="flex flex-col items-center text-center space-y-3 pt-2">
                 <div className="w-24 h-24 rounded-2xl bg-[#0B0F19] border border-[#23324C] flex items-center justify-center p-2">
                   <img
-                    src={`https://api.dokkandb.com/assets/character/thumb/card_${selectedChar.id}_thumb_folder/card_${selectedChar.id}_thumb.png`}
+                    src={`https://www.dokkandb.com/assets/character/thumb/card_${selectedChar.id}_thumb.png`}
                     alt={selectedChar.name}
                     className="w-full h-full object-contain"
                   />
@@ -225,7 +225,7 @@ export const LinkingPartners: React.FC = () => {
               {partners.map((partner, index) => {
                 const char = partner.character;
                 const elInfo = ELEMENT_MAP[char.element] || { type: 'AGL', color: 'bg-gray-500', label: 'Unknown' };
-                const thumbUrl = `https://api.dokkandb.com/assets/character/thumb/card_${char.id}_thumb_folder/card_${char.id}_thumb.png`;
+                const thumbUrl = `https://www.dokkandb.com/assets/character/thumb/card_${char.id}_thumb.png`;
 
                 return (
                   <motion.div

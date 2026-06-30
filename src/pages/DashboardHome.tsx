@@ -1,6 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
-import { Swords, FolderHeart, Sparkles, Database, ChevronRight } from 'lucide-react';
+import { 
+  Swords, 
+  Activity,
+  Layers,
+  CheckSquare
+} from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 
@@ -15,17 +20,14 @@ export const DashboardHome: React.FC = () => {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        // Fetch total characters count
         const { count: charCount } = await supabase
           .from('dokkan_characters')
           .select('*', { count: 'exact', head: true });
 
-        // Fetch user box count
         const { count: boxCount } = await supabase
           .from('dokkan_user_box')
           .select('*', { count: 'exact', head: true });
 
-        // Fetch user teams count
         const { count: teamCount } = await supabase
           .from('dokkan_user_teams')
           .select('*', { count: 'exact', head: true });
@@ -55,104 +57,201 @@ export const DashboardHome: React.FC = () => {
   };
 
   return (
-    <div className="p-8 max-w-6xl mx-auto space-y-10 relative">
+    <div className="p-6 md:p-8 max-w-6xl mx-auto space-y-10 relative">
       {/* Background radial highlight */}
       <div className="absolute top-10 right-10 w-96 h-96 bg-blue-500/5 rounded-full blur-3xl pointer-events-none" />
 
       {/* Header welcome banner */}
       <div className="flex flex-col gap-2">
-        <h1 className="text-4xl font-extrabold text-white tracking-tight">
-          Welcome Back, Phina
+        <h1 className="text-3xl md:text-4xl font-extrabold text-white tracking-tight font-sans">
+          Successor Hub
         </h1>
-        <p className="text-gray-400 font-medium">
-          Here is your personal workstation status. Manage your box and build optimal teams.
+        <p className="text-gray-400 font-medium text-sm md:text-base">
+          Welcome to your private suite of personal productivity & gaming tools.
         </p>
       </div>
 
-      {/* Quick Status Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {[
-          { name: 'Dokkan Characters', value: stats.totalCharacters, icon: Database, color: 'text-blue-400 bg-blue-500/10 border-blue-500/20' },
-          { name: 'My Collected Box', value: stats.boxCount, icon: FolderHeart, color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20' },
-          { name: 'Saved Teams', value: stats.teamCount, icon: Swords, color: 'text-purple-400 bg-purple-500/10 border-purple-500/20' },
-        ].map((stat, i) => (
+      {/* Apps Launcher Section */}
+      <div className="space-y-6">
+        <h3 className="text-xs font-bold uppercase tracking-wider text-gray-500">My Applications</h3>
+        
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* APP 1: DOKKAN BATTLE HELPER */}
           <motion.div
-            key={stat.name}
-            custom={i}
+            custom={0}
             initial="hidden"
             animate="visible"
             variants={cardVariants}
-            className={`border rounded-2xl p-6 flex items-center justify-between shadow-lg bg-[#161F30]/40 backdrop-blur-sm ${stat.color.split(' ').slice(1).join(' ')}`}
+            className="bg-[#161F30]/75 border border-[#23324C] rounded-3xl p-6 shadow-xl flex flex-col justify-between space-y-6 group relative overflow-hidden"
           >
-            <div className="space-y-1">
-              <p className="text-xs font-bold uppercase tracking-wider text-gray-400">{stat.name}</p>
-              {loading ? (
-                <div className="h-9 w-16 bg-gray-700/50 rounded-lg animate-pulse" />
-              ) : (
-                <p className="text-3xl font-extrabold text-white">{stat.value.toLocaleString()}</p>
-              )}
+            {/* Ambient background glow */}
+            <div className="absolute -right-16 -top-16 w-36 h-36 bg-blue-500/10 rounded-full blur-2xl pointer-events-none" />
+            
+            <div className="space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-blue-500/15 border border-blue-500/30 flex items-center justify-center">
+                  <Swords className="w-5 h-5 text-blue-400" />
+                </div>
+                <div>
+                  <h4 className="font-extrabold text-white text-lg flex items-center gap-2">
+                    Dokkan Battle Helper
+                    <span className="text-[9px] font-black tracking-widest uppercase bg-blue-500/20 text-blue-300 border border-blue-500/30 px-1.5 py-0.5 rounded-full">
+                      Active
+                    </span>
+                  </h4>
+                  <p className="text-xs text-gray-400 mt-0.5">Optimize teams, manage collection, find linking partners.</p>
+                </div>
+              </div>
+
+              {/* Quick stats grid inside Dokkan App */}
+              <div className="grid grid-cols-3 gap-3 bg-[#0B0F19]/40 border border-[#23324C]/40 p-4 rounded-2xl text-center">
+                <div>
+                  <p className="text-[9px] font-bold uppercase text-gray-500 tracking-wider">Total Cards</p>
+                  <p className="text-base font-black text-white mt-0.5">
+                    {loading ? '...' : stats.totalCharacters.toLocaleString()}
+                  </p>
+                </div>
+                <div className="border-x border-[#23324C]/60">
+                  <p className="text-[9px] font-bold uppercase text-gray-500 tracking-wider">In Box</p>
+                  <p className="text-base font-black text-white mt-0.5">
+                    {loading ? '...' : stats.boxCount.toLocaleString()}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-[9px] font-bold uppercase text-gray-500 tracking-wider">Teams</p>
+                  <p className="text-base font-black text-white mt-0.5">
+                    {loading ? '...' : stats.teamCount.toLocaleString()}
+                  </p>
+                </div>
+              </div>
             </div>
-            <div className={`p-4 rounded-xl border ${stat.color}`}>
-              <stat.icon className="w-6 h-6 shrink-0" />
+
+            {/* Quick module links */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              {[
+                { label: 'Catalog', to: '/dokkan' },
+                { label: 'Team Builder', to: '/dokkan/team' },
+                { label: 'My Box', to: '/dokkan/box' },
+                { label: 'Partners', to: '/dokkan/partners' },
+                { label: 'Advisor', to: '/dokkan/advisor' },
+              ].map(link => (
+                <Link
+                  key={link.label}
+                  to={link.to}
+                  className="py-2 px-3 bg-[#1C283F]/50 hover:bg-blue-600 hover:text-white border border-[#23324C] hover:border-blue-500 text-[10px] font-bold text-center text-gray-300 rounded-xl transition-all"
+                >
+                  {link.label}
+                </Link>
+              ))}
             </div>
           </motion.div>
-        ))}
-      </div>
 
-      {/* Tools Shortcuts Section */}
-      <div className="space-y-4">
-        <h3 className="text-xl font-bold text-white tracking-wide">Quick Tools Shortcuts</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {[
-            {
-              title: 'Dokkan Catalog',
-              desc: 'Browse and search all 1,385+ cards. Sort by elements, rarities, categories, and links.',
-              to: '/dokkan',
-              icon: Database,
-              color: 'from-blue-600 to-cyan-600',
-            },
-            {
-              title: 'Card Box Manager',
-              desc: 'Manage your owned characters, update their levels, potential percentages, and custom notes.',
-              to: '/dokkan/box',
-              icon: FolderHeart,
-              color: 'from-emerald-600 to-teal-600',
-            },
-            {
-              title: 'Linking Partner Finder',
-              desc: 'Choose any card to instantly calculate and list its best linking partners based on shared link skills.',
-              to: '/dokkan/partners',
-              icon: Sparkles,
-              color: 'from-purple-600 to-indigo-600',
-            },
-          ].map((tool, i) => (
-            <motion.div
-              key={tool.title}
-              custom={i + 3}
-              initial="hidden"
-              animate="visible"
-              variants={cardVariants}
-              className="bg-[#161F30]/60 border border-[#23324C] hover:border-gray-700 rounded-2xl overflow-hidden transition-all hover:shadow-xl hover:shadow-black/20 flex flex-col group"
-            >
-              <div className={`h-2 bg-gradient-to-r ${tool.color}`} />
-              <div className="p-6 flex-1 flex flex-col justify-between space-y-4">
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <tool.icon className="w-5 h-5 text-gray-300" />
-                    <h4 className="font-bold text-white text-lg">{tool.title}</h4>
-                  </div>
-                  <p className="text-sm text-gray-400 leading-relaxed">{tool.desc}</p>
+          {/* APP 2: TENNIS & BETTING SCANNER (COMING SOON) */}
+          <motion.div
+            custom={1}
+            initial="hidden"
+            animate="visible"
+            variants={cardVariants}
+            className="bg-[#161F30]/40 border border-[#23324C]/60 rounded-3xl p-6 flex flex-col justify-between space-y-6 relative overflow-hidden"
+          >
+            {/* Ambient background glow */}
+            <div className="absolute -right-16 -top-16 w-36 h-36 bg-lime-500/5 rounded-full blur-2xl pointer-events-none" />
+
+            <div className="space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-gray-800 border border-gray-700 flex items-center justify-center">
+                  <Activity className="w-5 h-5 text-gray-500" />
                 </div>
-                <Link
-                  to={tool.to}
-                  className="inline-flex items-center gap-1.5 text-xs font-bold text-white group-hover:text-blue-400 transition-colors uppercase tracking-wider"
-                >
-                  Open Tool
-                  <ChevronRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
-                </Link>
+                <div>
+                  <h4 className="font-extrabold text-gray-400 text-lg flex items-center gap-2">
+                    Tennis & Betting Scanner
+                    <span className="text-[9px] font-black tracking-widest uppercase bg-gray-800 text-gray-500 border border-gray-700 px-1.5 py-0.5 rounded-full">
+                      Soon
+                    </span>
+                  </h4>
+                  <p className="text-xs text-gray-500 mt-0.5">Integration of backhandtl analytics scanner dashboard.</p>
+                </div>
               </div>
-            </motion.div>
-          ))}
+
+              {/* Teaser placeholder info */}
+              <div className="bg-[#0B0F19]/20 border border-[#23324C]/20 p-4 rounded-2xl text-xs text-gray-500 leading-relaxed italic">
+                Will aggregate matches list, live odds movements, neural network player predictions, and court database.
+              </div>
+            </div>
+
+            <button
+              disabled
+              className="w-full py-2 px-3 bg-gray-900/40 border border-gray-800/50 text-[10px] font-bold text-center text-gray-600 rounded-xl cursor-not-allowed"
+            >
+              Scanner Locked
+            </button>
+          </motion.div>
+
+          {/* APP 3: TASK MANAGER (PLACEHOLDER) */}
+          <motion.div
+            custom={2}
+            initial="hidden"
+            animate="visible"
+            variants={cardVariants}
+            className="bg-[#161F30]/40 border border-[#23324C]/60 rounded-3xl p-6 flex flex-col justify-between space-y-6 relative overflow-hidden"
+          >
+            <div className="space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-gray-800 border border-gray-700 flex items-center justify-center">
+                  <CheckSquare className="w-5 h-5 text-gray-500" />
+                </div>
+                <div>
+                  <h4 className="font-extrabold text-gray-400 text-lg flex items-center gap-2">
+                    Personal Planner
+                    <span className="text-[9px] font-black tracking-widest uppercase bg-gray-800 text-gray-500 border border-gray-700 px-1.5 py-0.5 rounded-full">
+                      Soon
+                    </span>
+                  </h4>
+                  <p className="text-xs text-gray-500 mt-0.5">Tasks, routines, and habit tracking for your daily schedule.</p>
+                </div>
+              </div>
+            </div>
+
+            <button
+              disabled
+              className="w-full py-2 px-3 bg-gray-900/40 border border-gray-800/50 text-[10px] font-bold text-center text-gray-600 rounded-xl cursor-not-allowed"
+            >
+              Planner Locked
+            </button>
+          </motion.div>
+
+          {/* APP 4: FINANCIAL TRACKER (PLACEHOLDER) */}
+          <motion.div
+            custom={3}
+            initial="hidden"
+            animate="visible"
+            variants={cardVariants}
+            className="bg-[#161F30]/40 border border-[#23324C]/60 rounded-3xl p-6 flex flex-col justify-between space-y-6 relative overflow-hidden"
+          >
+            <div className="space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-gray-800 border border-gray-700 flex items-center justify-center">
+                  <Layers className="w-5 h-5 text-gray-500" />
+                </div>
+                <div>
+                  <h4 className="font-extrabold text-gray-400 text-lg flex items-center gap-2">
+                    Finances
+                    <span className="text-[9px] font-black tracking-widest uppercase bg-gray-800 text-gray-500 border border-gray-700 px-1.5 py-0.5 rounded-full">
+                      Soon
+                    </span>
+                  </h4>
+                  <p className="text-xs text-gray-500 mt-0.5">Tracks monthly expenses, investments, and net worth charts.</p>
+                </div>
+              </div>
+            </div>
+
+            <button
+              disabled
+              className="w-full py-2 px-3 bg-gray-900/40 border border-gray-800/50 text-[10px] font-bold text-center text-gray-600 rounded-xl cursor-not-allowed"
+            >
+              Finances Locked
+            </button>
+          </motion.div>
         </div>
       </div>
     </div>

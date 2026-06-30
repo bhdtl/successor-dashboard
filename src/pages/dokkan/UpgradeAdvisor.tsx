@@ -204,7 +204,7 @@ export const UpgradeAdvisor: React.FC = () => {
                 {recommendations.map((rec) => {
                   const char = rec.character;
                   const elInfo = ELEMENT_MAP[char.element] || { type: 'AGL', color: 'bg-gray-500', label: 'Unknown' };
-                  const thumbUrl = `https://api.dokkandb.com/assets/character/thumb/card_${char.id}_thumb_folder/card_${char.id}_thumb.png`;
+                  const thumbUrl = `https://www.dokkandb.com/assets/character/thumb/card_${char.id}_thumb.png`;
 
                   const priorityColors = {
                     CRITICAL: 'bg-red-500/10 text-red-400 border-red-500/25',
