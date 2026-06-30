@@ -246,7 +246,7 @@ export const TeamBuilder: React.FC = () => {
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-4">
             {team.map((slot, idx) => {
               const char = slot.character;
-              const thumbUrl = char ? `https://www.dokkandb.com/assets/character/thumb/card_${char.id}_thumb.png` : '';
+              const thumbUrl = char ? `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/character-thumbnails/card_${char.id}_thumb.png` : '';
 
               return (
                 <div
@@ -432,7 +432,7 @@ export const TeamBuilder: React.FC = () => {
                 <div className="space-y-2 overflow-y-auto pr-1">
                   {getCandidates().map((char) => {
                     const elInfo = ELEMENT_MAP[char.element] || { type: 'AGL', color: 'bg-gray-500', label: 'Unknown' };
-                    const thumbUrl = `https://www.dokkandb.com/assets/character/thumb/card_${char.id}_thumb.png`;
+                    const thumbUrl = `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/character-thumbnails/card_${char.id}_thumb.png`;
 
                     return (
                       <button
