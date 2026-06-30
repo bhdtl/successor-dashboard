@@ -18,7 +18,7 @@ export const RARITY_MAP: Record<number, string> = {
   5: 'LR',
 };
 
-export const DokkanCard: React.FC<DokkanCardProps> = ({
+export const DokkanCard = React.memo<DokkanCardProps>(({
   cardId,
   name,
   rarity,
@@ -175,4 +175,6 @@ export const DokkanCard: React.FC<DokkanCardProps> = ({
       )}
     </div>
   );
-};
+});
+
+DokkanCard.displayName = 'DokkanCard';
