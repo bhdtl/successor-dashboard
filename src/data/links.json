@@ -1,0 +1,534 @@
+[
+  {
+    "id": 1,
+    "name": "High Compatibility"
+  },
+  {
+    "id": 2,
+    "name": "Courage"
+  },
+  {
+    "id": 3,
+    "name": "The Students"
+  },
+  {
+    "id": 4,
+    "name": "The Innocents"
+  },
+  {
+    "id": 5,
+    "name": "Crane School"
+  },
+  {
+    "id": 6,
+    "name": "Demonic Ways"
+  },
+  {
+    "id": 7,
+    "name": "Demonic Power"
+  },
+  {
+    "id": 8,
+    "name": "Brainiacs"
+  },
+  {
+    "id": 9,
+    "name": "Golden Warrior"
+  },
+  {
+    "id": 10,
+    "name": "Money Money Money"
+  },
+  {
+    "id": 11,
+    "name": "Evil Autocrats"
+  },
+  {
+    "id": 12,
+    "name": "Flee"
+  },
+  {
+    "id": 13,
+    "name": "Telekinesis"
+  },
+  {
+    "id": 14,
+    "name": "More Than Meets the Eye"
+  },
+  {
+    "id": 15,
+    "name": "Hero"
+  },
+  {
+    "id": 16,
+    "name": "Supreme Warrior"
+  },
+  {
+    "id": 17,
+    "name": "Gentleman"
+  },
+  {
+    "id": 18,
+    "name": "Brutal Beatdown"
+  },
+  {
+    "id": 19,
+    "name": "Messenger from the Future"
+  },
+  {
+    "id": 20,
+    "name": "World Tournament Reborn"
+  },
+  {
+    "id": 21,
+    "name": "New"
+  },
+  {
+    "id": 22,
+    "name": "Saiyan Warrior Race"
+  },
+  {
+    "id": 23,
+    "name": "All in the Family"
+  },
+  {
+    "id": 24,
+    "name": "Telepathy"
+  },
+  {
+    "id": 25,
+    "name": "Respect"
+  },
+  {
+    "id": 26,
+    "name": "Prodigies"
+  },
+  {
+    "id": 27,
+    "name": "World Tournament Champion"
+  },
+  {
+    "id": 28,
+    "name": "Metamorphosis"
+  },
+  {
+    "id": 29,
+    "name": "Super Saiyan"
+  },
+  {
+    "id": 30,
+    "name": "Experienced Fighters"
+  },
+  {
+    "id": 31,
+    "name": "Twin Terrors"
+  },
+  {
+    "id": 32,
+    "name": "Coward"
+  },
+  {
+    "id": 33,
+    "name": "Attack of the Clones"
+  },
+  {
+    "id": 34,
+    "name": "The Saiyan Lineage"
+  },
+  {
+    "id": 35,
+    "name": "Android Assault"
+  },
+  {
+    "id": 36,
+    "name": "Turtle School"
+  },
+  {
+    "id": 37,
+    "name": "Solid Support"
+  },
+  {
+    "id": 38,
+    "name": "Mechanical Menaces"
+  },
+  {
+    "id": 39,
+    "name": "Cold Judgment"
+  },
+  {
+    "id": 40,
+    "name": "Royal Lineage"
+  },
+  {
+    "id": 41,
+    "name": "The Ginyu Force"
+  },
+  {
+    "id": 42,
+    "name": "Infighter"
+  },
+  {
+    "id": 43,
+    "name": "Frieza's Minion"
+  },
+  {
+    "id": 44,
+    "name": "Champion's Strength"
+  },
+  {
+    "id": 45,
+    "name": "Z Fighters"
+  },
+  {
+    "id": 46,
+    "name": "Dodon Ray"
+  },
+  {
+    "id": 47,
+    "name": "Kamehameha"
+  },
+  {
+    "id": 48,
+    "name": "Namekians"
+  },
+  {
+    "id": 49,
+    "name": "Berserker"
+  },
+  {
+    "id": 50,
+    "name": "Big Bad Bosses"
+  },
+  {
+    "id": 51,
+    "name": "Frieza's Army"
+  },
+  {
+    "id": 52,
+    "name": "Tough as Nails"
+  },
+  {
+    "id": 53,
+    "name": "Speedy Retribution"
+  },
+  {
+    "id": 54,
+    "name": "Tag Team of Terror"
+  },
+  {
+    "id": 55,
+    "name": "RR Army"
+  },
+  {
+    "id": 56,
+    "name": "Gaze of Respect"
+  },
+  {
+    "id": 57,
+    "name": "Bombardment"
+  },
+  {
+    "id": 58,
+    "name": "Over 9000"
+  },
+  {
+    "id": 59,
+    "name": "Universe's Most Malevolent"
+  },
+  {
+    "id": 60,
+    "name": "Shocking Speed"
+  },
+  {
+    "id": 61,
+    "name": "Family Ties"
+  },
+  {
+    "id": 62,
+    "name": "Team Bardock"
+  },
+  {
+    "id": 63,
+    "name": "Saiyan Pride"
+  },
+  {
+    "id": 64,
+    "name": "Battlefield Diva"
+  },
+  {
+    "id": 65,
+    "name": "Revival"
+  },
+  {
+    "id": 66,
+    "name": "Dismal Future"
+  },
+  {
+    "id": 67,
+    "name": "Organic Upgrade"
+  },
+  {
+    "id": 68,
+    "name": "Resurrection 'F'"
+  },
+  {
+    "id": 69,
+    "name": "Patrol"
+  },
+  {
+    "id": 70,
+    "name": "Warrior Gods"
+  },
+  {
+    "id": 71,
+    "name": "Super-God Combat"
+  },
+  {
+    "id": 72,
+    "name": "New Frieza Army"
+  },
+  {
+    "id": 73,
+    "name": "Loyalty"
+  },
+  {
+    "id": 74,
+    "name": "Unbreakable Bond"
+  },
+  {
+    "id": 75,
+    "name": "Galactic Visitor"
+  },
+  {
+    "id": 76,
+    "name": "Master of Magic"
+  },
+  {
+    "id": 77,
+    "name": "Majin Resurrection Plan"
+  },
+  {
+    "id": 79,
+    "name": "Connoisseur"
+  },
+  {
+    "id": 80,
+    "name": "Godly Power"
+  },
+  {
+    "id": 81,
+    "name": "Energy Absorption"
+  },
+  {
+    "id": 82,
+    "name": "Budding Warrior"
+  },
+  {
+    "id": 83,
+    "name": "Majin"
+  },
+  {
+    "id": 84,
+    "name": "Strength in Unity"
+  },
+  {
+    "id": 85,
+    "name": "Strongest Clan in Space"
+  },
+  {
+    "id": 86,
+    "name": "Thirst for Conquest"
+  },
+  {
+    "id": 87,
+    "name": "The Hera Clan"
+  },
+  {
+    "id": 88,
+    "name": "Galactic Warriors"
+  },
+  {
+    "id": 89,
+    "name": "Over in a Flash"
+  },
+  {
+    "id": 90,
+    "name": "The Incredible Adventure"
+  },
+  {
+    "id": 91,
+    "name": "Cooler's Underling"
+  },
+  {
+    "id": 92,
+    "name": "Cooler's Armored Squad"
+  },
+  {
+    "id": 93,
+    "name": "Hero of Justice"
+  },
+  {
+    "id": 94,
+    "name": "Signature Pose"
+  },
+  {
+    "id": 95,
+    "name": "GT"
+  },
+  {
+    "id": 96,
+    "name": "Infinite Regeneration"
+  },
+  {
+    "id": 97,
+    "name": "Prepared for Battle"
+  },
+  {
+    "id": 98,
+    "name": "Destroyer of the Universe"
+  },
+  {
+    "id": 100,
+    "name": "Team Turles"
+  },
+  {
+    "id": 101,
+    "name": "Fortuneteller Baba's Fighter"
+  },
+  {
+    "id": 102,
+    "name": "Guidance of the Dragon Balls"
+  },
+  {
+    "id": 103,
+    "name": "Power Bestowed by God"
+  },
+  {
+    "id": 104,
+    "name": "Hardened Grudge"
+  },
+  {
+    "id": 105,
+    "name": "Auto Regeneration"
+  },
+  {
+    "id": 106,
+    "name": "Fusion"
+  },
+  {
+    "id": 107,
+    "name": "Deficit Boost"
+  },
+  {
+    "id": 108,
+    "name": "Ultimate Lifeform"
+  },
+  {
+    "id": 109,
+    "name": "Fierce Battle"
+  },
+  {
+    "id": 110,
+    "name": "Infinite Energy"
+  },
+  {
+    "id": 111,
+    "name": "Formidable Enemy"
+  },
+  {
+    "id": 112,
+    "name": "Fused Fighter"
+  },
+  {
+    "id": 113,
+    "name": "Fusion Failure"
+  },
+  {
+    "id": 114,
+    "name": "Scientist"
+  },
+  {
+    "id": 115,
+    "name": "Hatred of Saiyans"
+  },
+  {
+    "id": 116,
+    "name": "Limit-Breaking Form"
+  },
+  {
+    "id": 117,
+    "name": "The First Awakened"
+  },
+  {
+    "id": 118,
+    "name": "Shattering the Limit"
+  },
+  {
+    "id": 119,
+    "name": "Nightmare"
+  },
+  {
+    "id": 120,
+    "name": "Fear and Faith"
+  },
+  {
+    "id": 121,
+    "name": "Xenoverse"
+  },
+  {
+    "id": 122,
+    "name": "Super Strike"
+  },
+  {
+    "id": 123,
+    "name": "Transform"
+  },
+  {
+    "id": 124,
+    "name": "Saiyan Roar"
+  },
+  {
+    "id": 125,
+    "name": "Legendary Power"
+  },
+  {
+    "id": 126,
+    "name": "Warriors of Universe 6 "
+  },
+  {
+    "id": 127,
+    "name": "Shadow Dragons"
+  },
+  {
+    "id": 128,
+    "name": "Penguin Village Adventure"
+  },
+  {
+    "id": 129,
+    "name": "Otherworld Warriors"
+  },
+  {
+    "id": 130,
+    "name": "Tournament of Power"
+  },
+  {
+    "id": 1000,
+    "name": "Blazing Battle"
+  },
+  {
+    "id": 1001,
+    "name": "Soul vs Soul"
+  },
+  {
+    "id": 1002,
+    "name": "Golden Z-Fighter"
+  },
+  {
+    "id": 1003,
+    "name": "Supreme Power"
+  },
+  {
+    "id": 1004,
+    "name": "The Wall Standing Tall"
+  }
+]
