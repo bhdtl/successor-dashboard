@@ -3,18 +3,22 @@ name: Run Meta Evaluation
 on:
   push:
     branches: [ main ]
-  workflow_dispatch: # Ermöglicht manuelles Starten über den GitHub "Actions" Reiter
+  workflow_dispatch: # Allows manual triggering from the GitHub Actions tab
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+
       - name: Setup Node
         uses: actions/setup-node@v3
-        with: { node-version: '18' }
+        with:
+          node-version: '22' # Upgraded to Node 22 to supply native WebSocket support required by Supabase
+
       - name: Install dependencies
         run: npm install @supabase/supabase-js node-fetch
+
       - name: Run Evaluation
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
