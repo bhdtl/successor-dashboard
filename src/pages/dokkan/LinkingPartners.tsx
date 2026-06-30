@@ -10,6 +10,7 @@ import {
   TrendingUp
 } from 'lucide-react';
 import { motion } from 'framer-motion';
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://sudscqbmhbpgmwibnkco.supabase.co';
 
 interface Character {
   id: number;
@@ -299,4 +300,3 @@ export const LinkingPartners: React.FC = () => {
   );
 };
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://sudscqbmhbpgmwibnkco.supabase.co';

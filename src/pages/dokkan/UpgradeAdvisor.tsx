@@ -12,6 +12,7 @@ import {
   FolderHeart
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://sudscqbmhbpgmwibnkco.supabase.co';
 
 interface BoxItem {
   user_id: string;
@@ -266,4 +267,3 @@ export const UpgradeAdvisor: React.FC = () => {
   );
 };
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://sudscqbmhbpgmwibnkco.supabase.co';

@@ -16,6 +16,7 @@ import {
   ChevronDown
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://sudscqbmhbpgmwibnkco.supabase.co';
 
 // Constant mappings derived from dataset exploration
 export const ELEMENT_MAP: Record<number, { type: 'AGL' | 'TEQ' | 'INT' | 'STR' | 'PHY'; class: 'Super' | 'Extreme'; color: string; border: string; label: string }> = {
@@ -660,4 +661,3 @@ export const DokkanCatalog: React.FC = () => {
   );
 };
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://sudscqbmhbpgmwibnkco.supabase.co';
