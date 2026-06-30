@@ -14,8 +14,7 @@ import {
   Sparkles,
   HelpCircle,
   TrendingUp,
-  AlertTriangle,
-  Award
+  AlertTriangle
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
