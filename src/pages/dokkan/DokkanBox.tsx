@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { supabase } from '../../lib/supabase';
+import { supabase, getDokkanThumbUrl } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
 import { ELEMENT_MAP, RARITY_MAP } from './DokkanCatalog';
 import { 
@@ -14,7 +14,6 @@ import {
   X
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://sudscqbmhbpgmwibnkco.supabase.co';
 
 interface BoxItem {
   user_id: string;
@@ -192,7 +191,7 @@ export const DokkanBox: React.FC = () => {
             if (!char) return null;
 
             const elInfo = ELEMENT_MAP[char.element] || { type: 'AGL', class: 'Super', color: 'bg-gray-500', border: 'border-gray-400', label: 'Unknown' };
-            const thumbUrl = `${supabaseUrl}/storage/v1/object/public/character-thumbnails/card_${char.id}_thumb.png`;
+            const thumbUrl = getDokkanThumbUrl(char.id);
 
             return (
               <motion.div
@@ -286,7 +285,7 @@ export const DokkanBox: React.FC = () => {
                 <div className="flex gap-4 items-center">
                   <div className="w-16 h-16 rounded-xl bg-[#0B0F19] border border-[#23324C] flex items-center justify-center p-1 shrink-0">
                     <img
-                      src={`${supabaseUrl}/storage/v1/object/public/character-thumbnails/card_${editingItem.card_id}_thumb.png`}
+                      src={getDokkanThumbUrl(editingItem.card_id)}
                       alt={editingItem.character?.name}
                       className="w-full h-full object-contain"
                     />

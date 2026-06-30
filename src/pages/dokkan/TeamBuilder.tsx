@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { supabase } from '../../lib/supabase';
+import { supabase, getDokkanThumbUrl } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
 import { ELEMENT_MAP, RARITY_MAP } from './DokkanCatalog';
 import categoriesData from '../../data/categories.json';
@@ -12,7 +12,6 @@ import {
   Search
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://sudscqbmhbpgmwibnkco.supabase.co';
 
 interface Character {
   id: number;
@@ -247,7 +246,7 @@ export const TeamBuilder: React.FC = () => {
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-4">
             {team.map((slot, idx) => {
               const char = slot.character;
-              const thumbUrl = char ? `${supabaseUrl}/storage/v1/object/public/character-thumbnails/card_${char.id}_thumb.png` : '';
+              const thumbUrl = char ? getDokkanThumbUrl(char.id) : '';
 
               return (
                 <div
@@ -433,7 +432,7 @@ export const TeamBuilder: React.FC = () => {
                 <div className="space-y-2 overflow-y-auto pr-1">
                   {getCandidates().map((char) => {
                     const elInfo = ELEMENT_MAP[char.element] || { type: 'AGL', color: 'bg-gray-500', label: 'Unknown' };
-                    const thumbUrl = `${supabaseUrl}/storage/v1/object/public/character-thumbnails/card_${char.id}_thumb.png`;
+                    const thumbUrl = getDokkanThumbUrl(char.id);
 
                     return (
                       <button

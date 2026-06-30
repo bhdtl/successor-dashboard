@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { supabase } from '../../lib/supabase';
+import { supabase, getDokkanThumbUrl } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
 import { ELEMENT_MAP } from './DokkanCatalog';
 import { 
@@ -12,7 +12,6 @@ import {
   FolderHeart
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://sudscqbmhbpgmwibnkco.supabase.co';
 
 interface BoxItem {
   user_id: string;
@@ -205,7 +204,7 @@ export const UpgradeAdvisor: React.FC = () => {
                 {recommendations.map((rec) => {
                   const char = rec.character;
                   const elInfo = ELEMENT_MAP[char.element] || { type: 'AGL', color: 'bg-gray-500', label: 'Unknown' };
-                  const thumbUrl = `${supabaseUrl}/storage/v1/object/public/character-thumbnails/card_${char.id}_thumb.png`;
+                  const thumbUrl = getDokkanThumbUrl(char.id);
 
                   const priorityColors = {
                     CRITICAL: 'bg-red-500/10 text-red-400 border-red-500/25',
