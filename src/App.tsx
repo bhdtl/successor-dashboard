@@ -8,7 +8,6 @@ import { DokkanCatalog } from './pages/dokkan/DokkanCatalog';
 import { TeamBuilder } from './pages/dokkan/TeamBuilder';
 import { DokkanBox } from './pages/dokkan/DokkanBox';
 import { LinkingPartners } from './pages/dokkan/LinkingPartners';
-import { UpgradeAdvisor } from './pages/dokkan/UpgradeAdvisor';
 import { Loader } from 'lucide-react';
 
 // Protected Route Wrapper
@@ -78,7 +77,6 @@ function App() {
             <Route path="dokkan/team" element={<TeamBuilder />} />
             <Route path="dokkan/box" element={<DokkanBox />} />
             <Route path="dokkan/partners" element={<LinkingPartners />} />
-            <Route path="dokkan/advisor" element={<UpgradeAdvisor />} />
           </Route>
 
           {/* Catch-all Redirect */}

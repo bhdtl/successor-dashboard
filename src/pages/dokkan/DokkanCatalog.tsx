@@ -581,16 +581,7 @@ export const DokkanCatalog: React.FC = () => {
                     className="shrink-0"
                   />
                   <div className="space-y-2">
-                    <div className="flex flex-wrap gap-2 items-center">
-                      <span className={`px-2.5 py-0.5 rounded text-[10px] font-extrabold text-white tracking-wider ${
-                        ELEMENT_MAP[selectedChar.element]?.color
-                      }`}>
-                        {ELEMENT_MAP[selectedChar.element]?.label}
-                      </span>
-                      <span className="px-2.5 py-0.5 rounded bg-gray-800 border border-gray-700 text-[10px] font-extrabold text-gray-300 tracking-wider">
-                        {RARITY_MAP[selectedChar.rarity]}
-                      </span>
-                    </div>
+
                     <p className="text-sm font-semibold text-blue-400 leading-none">{selectedChar.subname}</p>
                     <h3 className="text-2xl font-extrabold text-white tracking-tight leading-tight">{selectedChar.name}</h3>
                   </div>

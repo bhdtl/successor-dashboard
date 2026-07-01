@@ -7,7 +7,6 @@ import {
   Swords, 
   FolderHeart, 
   Sparkles, 
-  Award,
   LogOut, 
   User, 
   ChevronRight,
@@ -32,7 +31,6 @@ export const Layout: React.FC = () => {
     { name: 'Team Builder', to: '/dokkan/team', icon: Swords },
     { name: 'My Box', to: '/dokkan/box', icon: FolderHeart },
     { name: 'Linking Partners', to: '/dokkan/partners', icon: Sparkles },
-    { name: 'Upgrade Advisor', to: '/dokkan/advisor', icon: Award },
   ];
 
   // Dynamic Mobile Tab Bar Navigation (High Revolution UI/UX)
@@ -44,7 +42,7 @@ export const Layout: React.FC = () => {
         { name: 'Catalog', to: '/dokkan', icon: Database },
         { name: 'Team', to: '/dokkan/team', icon: Swords },
         { name: 'Box', to: '/dokkan/box', icon: FolderHeart },
-        { name: 'Advisor', to: '/dokkan/advisor', icon: Award },
+        { name: 'Partners', to: '/dokkan/partners', icon: Sparkles },
       ]
     : [
         { name: 'Hub', to: '/', icon: LayoutDashboard },
