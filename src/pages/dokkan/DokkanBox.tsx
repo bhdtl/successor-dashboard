@@ -220,13 +220,10 @@ export const DokkanBox: React.FC = () => {
             const evalInfo = char.meta_evaluation || { tier: 'F', viability: 'Pending Index' };
 
             return (
-              <motion.div
+              <div
                 key={char.id}
                 onClick={() => setViewingProfileChar(char)} // Triggers direct catalog profile viewer popup modal
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                whileHover={{ y: -3 }}
-                className="bg-[#161F30]/75 border border-[#23324C] hover:border-emerald-500/50 rounded-2xl p-5 flex gap-4 cursor-pointer relative overflow-hidden transition-all shadow-lg group"
+                className="bg-[#161F30]/75 border border-[#23324C] hover:border-emerald-500/50 rounded-2xl p-5 flex gap-4 cursor-pointer relative overflow-hidden transition-all duration-200 hover:-translate-y-1 shadow-lg group"
               >
                 {/* Typing color stripe side */}
                 <div className={`absolute top-0 bottom-0 left-0 w-1 bg-gradient-to-b ${
@@ -274,7 +271,7 @@ export const DokkanBox: React.FC = () => {
                     </div>
                   </div>
                 </div>
-              </motion.div>
+              </div>
             );
           })}
         </div>

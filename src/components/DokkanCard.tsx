@@ -95,6 +95,7 @@ export const DokkanCard = React.memo<DokkanCardProps>(({
           <img
             src={frameUrl}
             alt=""
+            loading="lazy"
             onError={() => setFrameError(true)}
             className="absolute bottom-0 left-0 w-full h-full object-contain pointer-events-none"
             draggable="false"
@@ -145,6 +146,7 @@ export const DokkanCard = React.memo<DokkanCardProps>(({
         <img
           src={typeUrl}
           alt=""
+          loading="lazy"
           onError={() => setTypeError(true)}
           style={{
             width: `${typeIconSize}px`,
@@ -162,6 +164,7 @@ export const DokkanCard = React.memo<DokkanCardProps>(({
         <img
           src={rarityUrl}
           alt=""
+          loading="lazy"
           onError={() => setRarityError(true)}
           style={{
             width: `${rarityBadgeSize}px`,

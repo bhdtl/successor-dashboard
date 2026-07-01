@@ -436,14 +436,10 @@ export const DokkanCatalog: React.FC = () => {
           };
 
           return (
-            <motion.div
+            <div
               key={char.id}
               onClick={() => setSelectedChar(char)}
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              whileHover={{ y: -4 }}
-              transition={{ duration: 0.2 }}
-              className={`bg-[#161F30] border hover:border-gray-500 rounded-2xl p-4 flex flex-col justify-between cursor-pointer relative overflow-hidden group shadow-lg ${
+              className={`bg-[#161F30] border hover:border-gray-500 rounded-2xl p-4 flex flex-col justify-between cursor-pointer relative overflow-hidden group shadow-lg hover:-translate-y-1 transition-all duration-200 ${
                 inBox ? 'border-emerald-500/40 bg-emerald-950/5' : 'border-[#23324C]'
               }`}
             >
@@ -507,7 +503,7 @@ export const DokkanCatalog: React.FC = () => {
                   </>
                 )}
               </button>
-            </motion.div>
+            </div>
           );
         })}
       </div>
