@@ -70,7 +70,7 @@ Max Base Stats: HP: ${char.max_hp}, ATK: ${char.max_atk}, DEF: ${char.max_def}`;
           "X-Title": "Dokkan SaaS Analytics Engine"
         },
         body: JSON.stringify({
-          model: "xiaomi/mimo-v2.5", // Switched to Xiaomi Mimo per user request
+          model: "arcee-ai/trinity-mini", // Switched to Arcee-AI Trinity Mini for maximized processing execution speeds
           messages: [
             { role: "system", content: systemPrompt },
             { role: "user", content: userPrompt }
@@ -81,7 +81,7 @@ Max Base Stats: HP: ${char.max_hp}, ATK: ${char.max_atk}, DEF: ${char.max_def}`;
 
       const jsonRes = await response.json();
       
-      // New Error Inspection Feature: Logs official API rejections out directly
+      // Error Inspection Feature: Logs official API rejections out directly
       if (jsonRes.error) {
         console.error("OpenRouter API Error Object Detected:", JSON.stringify(jsonRes.error, null, 2));
       }
