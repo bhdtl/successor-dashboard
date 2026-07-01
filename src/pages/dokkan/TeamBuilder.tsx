@@ -14,7 +14,13 @@ import {
   Sparkles,
   HelpCircle,
   TrendingUp,
-  AlertTriangle
+  AlertTriangle,
+  Info,
+  Shield,
+  Flame,
+  Award,
+  ThumbsUp,
+  ThumbsDown
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -25,6 +31,11 @@ interface Character {
   rarity: number;
   element: number;
   leader_skill: string;
+  passive_skill_name?: string;
+  passive_skill_description?: string;
+  active_skill_name?: string;
+  active_skill_condition?: string;
+  active_skill_effect?: string;
   category_ids: number[];
   link_ids: number[];
   max_hp: number | null;
@@ -37,6 +48,14 @@ interface Character {
   rainbow_atk: number | null;
   rainbow_def: number | null;
   tag?: string;
+  meta_evaluation?: {
+    tier: string;
+    viability: string;
+    slot: string;
+    verdict: string;
+    pros: string[];
+    cons: string[];
+  } | null;
 }
 
 interface TeamSlot {
@@ -61,18 +80,20 @@ export const TeamBuilder: React.FC = () => {
     { role: 'Friend', character: null },
   ]);
 
-  // Modal selector states
+  // Modal selector and viewer states
   const [activeSlotIdx, setActiveSlotIdx] = useState<number | null>(null);
+  const [viewingProfileChar, setViewingProfileChar] = useState<Character | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [onlyBox, setOnlyBox] = useState(true);
+  const [statTab, setStatTab] = useState<'base' | 'max' | 'rainbow'>('max');
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Fetch all characters with full stats
+        // Fetch all characters including the freshly piped meta_evaluation column
         const { data: chars } = await supabase
           .from('dokkan_characters')
-          .select('id, name, subname, element, rarity, leader_skill, category_ids, link_ids, max_hp, max_atk, max_def, base_hp, base_atk, base_def, rainbow_hp, rainbow_atk, rainbow_def, tag');
+          .select('id, name, subname, element, rarity, leader_skill, passive_skill_name, passive_skill_description, active_skill_name, active_skill_condition, active_skill_effect, category_ids, link_ids, max_hp, max_atk, max_def, base_hp, base_atk, base_def, rainbow_hp, rainbow_atk, rainbow_def, tag, meta_evaluation');
         
         if (chars) setAllCharacters(chars as Character[]);
 
@@ -91,9 +112,9 @@ export const TeamBuilder: React.FC = () => {
     fetchData();
   }, [user]);
 
-  // Lock background scroll when character selection modal is open
+  // Lock background scroll when character selection modal or profile viewer is open
   useEffect(() => {
-    if (activeSlotIdx !== null) {
+    if (activeSlotIdx !== null || viewingProfileChar !== null) {
       document.body.style.overflow = 'hidden';
     } else {
       document.body.style.overflow = '';
@@ -101,67 +122,43 @@ export const TeamBuilder: React.FC = () => {
     return () => {
       document.body.style.overflow = '';
     };
-  }, [activeSlotIdx]);
+  }, [activeSlotIdx, viewingProfileChar]);
 
-  // Striktes 2026 Meta Tier-Bewertungssystem
-  const getStrictMetaTier = (char: Character) => {
-    const defense = char.max_def || 0;
-    const attack = char.max_atk || 0;
-    const skillText = (char.leader_skill || '').toLowerCase();
-    
-    // In der 2026er Meta ist DEF & Schadensreduktion alles. ATK skaliert geringer.
-    let score = (defense * 1.5) + (attack * 0.5);
-    
-    // Seltenheits-Bonus (Klassische alte URs fallen drastisch ab gegenüber LRs/EZAs)
-    if (char.rarity >= 5) {
-      score += 15000;
-    }
-    
-    // Leader Skill Check für moderne Meta-Relevanz
-    if (skillText.includes('200%')) {
-      score += 25000;
-    } else if (skillText.includes('170%')) {
-      score += 10000;
-    } else {
-      // Brutaler Abzug für veraltete Sub-170% Leader Skills oder alte Füller-URs
-      score -= 20000;
-    }
+  // Helper mapping to translate character evaluations into unified styling tags
+  const getTierBadgeStyle = (tier: string) => {
+    const tierStyles: Record<string, string> = {
+      'Z+': 'text-red-400 bg-red-500/10 border-red-500/20',
+      'S': 'text-amber-400 bg-amber-400/10 border-amber-400/20',
+      'A': 'text-purple-400 bg-purple-400/10 border-purple-400/20',
+      'B': 'text-blue-400 bg-blue-400/10 border-blue-500/20',
+      'F': 'text-gray-500 bg-gray-800 border-gray-700'
+    };
+    return tierStyles[tier] || tierStyles['F'];
+  };
 
-    // Extrem strenge Einstufungsgrenzen
-    if (score > 45000) {
-      return { label: 'Z+ Tier (Meta King)', style: 'text-red-400 bg-red-500/10 border-red-500/20', rawScore: score };
-    } else if (score > 35000) {
-      return { label: 'S Tier (Top Meta)', style: 'text-amber-400 bg-amber-400/10 border-amber-400/20', rawScore: score };
-    } else if (score > 20000) {
-      return { label: 'A Tier (Viable Sub)', style: 'text-purple-400 bg-purple-400/10 border-purple-400/20', rawScore: score };
-    } else if (score > 5000) {
-      return { label: 'B Tier (Niche Choice)', style: 'text-blue-400 bg-blue-400/10 border-blue-400/20', rawScore: score };
-    } else {
-      return { label: 'F Tier (Outclassed)', style: 'text-gray-500 bg-gray-800 border-gray-700', rawScore: score };
-    }
+  // Helper: map character tier string to an internal weight coefficient for database sorting matrix
+  const getTierWeight = (tier: string): number => {
+    const weights: Record<string, number> = { 'Z+': 5, 'S': 4, 'A': 3, 'B': 2, 'F': 1 };
+    return weights[tier] || 1;
   };
 
   // Helper: check if a character matches a leader skill
   const evaluateLeaderSkill = (leader: Character, target: Character): { matched: boolean; pct: number } => {
-    if (leader.id === target.id) return { matched: true, pct: 170 }; // default self-boost
+    if (leader.id === target.id) return { matched: true, pct: 170 };
     
     const skillText = (leader.leader_skill || '').toLowerCase();
-    
     let maxPct = 0;
     let matched = false;
 
     // 1. Check categories mentioned in leader skill
     categoriesData.forEach((cat: any) => {
       const catName = cat.name.toLowerCase();
-      // Match category names inside quotes or as boundaries
       if (skillText.includes(`"${catName}"`) || skillText.includes(catName)) {
         if (target.category_ids?.includes(cat.id)) {
           matched = true;
-          let pct = 150; // default base boost
+          let pct = 150;
 
-          // Detect boost percentage
           if (skillText.includes('200%') || (skillText.includes('plus an additional') && skillText.includes('+50%'))) {
-            // Check if card also qualifies for the additional +50% sub-categories
             const extraCats = ['full power', 'bond of master and disciple', 'earth-protecting heroes', 'kamehameha', 'super saiyans', 'power beyond super saiyan'];
             const hasExtra = target.category_ids?.some(cid => {
               const cName = categoriesData.find(c => c.id === cid)?.name.toLowerCase();
@@ -215,18 +212,16 @@ export const TeamBuilder: React.FC = () => {
     });
   };
 
-  // Enforce same name warnings (Dokkan Battle rule: no identical character names except friend)
   const hasSameNameWarning = (char: Character, slotIdx: number): boolean => {
     return team.some((slot, idx) => 
       slot.character && 
       idx !== slotIdx && 
-      idx !== 6 && // skip friend slot same-name check
-      slotIdx !== 6 && // skip if we are editing friend slot
+      idx !== 6 && 
+      slotIdx !== 6 && 
       slot.character.name === char.name
     );
   };
 
-  // Get active links of a character with the rest of the team
   const getSharedLinksWithTeam = (char: Character, slotIdx: number) => {
     const otherMembers = team.filter((s, idx) => s.character && idx !== slotIdx).map(s => s.character) as Character[];
     if (otherMembers.length === 0) return [];
@@ -241,7 +236,7 @@ export const TeamBuilder: React.FC = () => {
     });
   };
 
-  // Filter und SORTIERE Kandidaten nach Meta-Stärke + Link-Synergie + Leader Boost
+  // Enhanced Candidate Query Pipeline: Blends link synergy algorithms with database AI metadata evaluations
   const getCandidates = () => {
     let list = onlyBox
       ? allCharacters.filter(c => boxIds.includes(c.id))
@@ -259,7 +254,6 @@ export const TeamBuilder: React.FC = () => {
       const leader = team[0].character;
       const friend = team[6].character;
 
-      // Berechne Metadaten für exakte Sortierung
       const scoredList = list.map(c => {
         const otherMembers = team.filter((s, idx) => s.character && idx !== activeSlotIdx).map(s => s.character) as Character[];
         const sharedLinksCount = otherMembers.length > 0
@@ -270,22 +264,23 @@ export const TeamBuilder: React.FC = () => {
         const fBoost = friend ? evaluateLeaderSkill(friend, c).pct : 0;
         const totalBoost = lBoost + fBoost;
         
-        // Hole strikten Meta Score
-        const metaRating = getStrictMetaTier(c);
+        // Extract database tier evaluations coefficient
+        const aiEval = c.meta_evaluation || { tier: 'F' };
+        const aiWeight = getTierWeight(aiEval.tier);
 
         return {
           char: c,
           sharedLinksCount,
           totalBoost,
-          metaScore: metaRating.rawScore,
+          aiWeight,
           sameName: hasSameNameWarning(c, activeSlotIdx)
         };
       });
 
-      // Sortierung: Erlaubte Namen zuerst, dann strikt nach Meta-Power, danach Links & Leader Boost
+      // Sort Priority: No Name-Clash penalty, high AI Meta Tier, high Active Shared Links, high Leader Skill percentage
       scoredList.sort((a, b) => {
         if (a.sameName !== b.sameName) return a.sameName ? 1 : -1;
-        if (Math.abs(a.metaScore - b.metaScore) > 1000) return b.metaScore - a.metaScore;
+        if (a.aiWeight !== b.aiWeight) return b.aiWeight - a.aiWeight;
         if (a.sharedLinksCount !== b.sharedLinksCount) return b.sharedLinksCount - a.sharedLinksCount;
         return b.totalBoost - a.totalBoost;
       });
@@ -296,35 +291,33 @@ export const TeamBuilder: React.FC = () => {
     return list.slice(0, 30);
   };
 
-  // Get Top Linking Partner recommendations for a selected slot
   const getLinkingPartnerRecommendations = (char: Character, limit = 5) => {
     const list = onlyBox
       ? allCharacters.filter(c => boxIds.includes(c.id))
       : allCharacters;
 
     const scored = list
-      .filter(c => c.id !== char.id && c.name !== char.name) // Skip same character/name
+      .filter(c => c.id !== char.id && c.name !== char.name)
       .map(c => {
         const shared = (c.link_ids || []).filter(lid => char.link_ids?.includes(lid));
-        const metaRating = getStrictMetaTier(c);
+        const aiEval = c.meta_evaluation || { tier: 'F' };
         return {
           char: c,
           sharedLinks: shared.map(lid => linksData.find(l => l.id === lid)?.name || `Link ${lid}`),
-          metaScore: metaRating.rawScore
+          aiWeight: getTierWeight(aiEval.tier)
         };
       })
-      // Priorität auf Link-Anzahl, bei Gleichstand entscheidet die strikte Meta-Eignung
       .sort((a, b) => {
         if (a.sharedLinks.length !== b.sharedLinks.length) {
           return b.sharedLinks.length - a.sharedLinks.length;
         }
-        return b.metaScore - a.metaScore;
+        return b.aiWeight - a.aiWeight;
       });
 
     return scored.slice(0, limit);
   };
 
-  // Autobuild Team um den gewählten Leader herum mit extremen Meta-Filtern
+  // Smart AI-Driven Team Autobuilder Engine
   const handleAutobuild = () => {
     const leader = team[0].character;
     if (!leader) return;
@@ -341,22 +334,22 @@ export const TeamBuilder: React.FC = () => {
       return;
     }
 
-    // Gewichtung filtert unbrauchbare "Mid-Tier" Einheiten aggressiv heraus
     const scored = candidates.map(c => {
       const leaderBoost = evaluateLeaderSkill(leader, c).pct;
       const sharedLinks = (c.link_ids || []).filter(lid => leader.link_ids?.includes(lid)).length;
       const matchesCategory = c.category_ids?.some(cid => leaderCatIds.includes(cid)) ? 1 : 0;
-      const metaRating = getStrictMetaTier(c);
       
-      const score = (leaderBoost * 15) + (sharedLinks * 60) + (matchesCategory * 120) + (metaRating.rawScore * 0.05);
+      const aiEval = c.meta_evaluation || { tier: 'F' };
+      const aiWeight = getTierWeight(aiEval.tier);
+      
+      // Multi-dimensional evaluation formula prioritizing compatibility alongside global AI meta tiers
+      const score = (leaderBoost * 20) + (sharedLinks * 70) + (matchesCategory * 150) + (aiWeight * 200);
 
       return { char: c, score, name: c.name };
     });
 
-    // Sortierung nach Gesamt-Score
     scored.sort((a, b) => b.score - a.score);
 
-    // Filter nach 5 eindeutigen Namen
     const selected: Character[] = [];
     const usedNames = new Set<string>([leader.name]);
 
@@ -368,7 +361,6 @@ export const TeamBuilder: React.FC = () => {
       if (selected.length >= 5) break;
     }
 
-    // Plätze im Team zuweisen
     setTeam(prev => {
       const copy = [...prev];
       for (let i = 1; i <= 5; i++) {
@@ -381,13 +373,11 @@ export const TeamBuilder: React.FC = () => {
     setHighlightedSlotIdx(0);
   };
 
-  // Compute team analysis
   const computeTeamAnalysis = () => {
     const leader = team[0].character;
     const friend = team[6].character;
     const members = team.filter(slot => slot.character !== null).map(slot => slot.character) as Character[];
 
-    // Leader boosts
     const boosts = members.map(member => {
       let leaderPct = leader ? evaluateLeaderSkill(leader, member).pct : 0;
       let friendPct = friend ? evaluateLeaderSkill(friend, member).pct : 0;
@@ -399,7 +389,6 @@ export const TeamBuilder: React.FC = () => {
       };
     });
 
-    // Active links
     const linkCounts: Record<number, number> = {};
     members.forEach(member => {
       member.link_ids?.forEach(id => {
@@ -416,7 +405,6 @@ export const TeamBuilder: React.FC = () => {
       }))
       .sort((a, b) => b.count - a.count);
 
-    // Shared categories
     const catCounts: Record<number, number> = {};
     members.forEach(member => {
       member.category_ids?.forEach(id => {
@@ -434,6 +422,16 @@ export const TeamBuilder: React.FC = () => {
       .sort((a, b) => b.count - a.count);
 
     return { boosts, activeLinks, sharedCategories };
+  };
+
+  const getCategoryName = (id: number) => {
+    const cat = categoriesData.find((c: any) => c.id === id);
+    return cat ? cat.name : `Category ${id}`;
+  };
+
+  const getLinkName = (id: number) => {
+    const lk = linksData.find((l: any) => l.id === id);
+    return lk ? lk.name : `Link ${id}`;
   };
 
   const analysis = computeTeamAnalysis();
@@ -459,7 +457,7 @@ export const TeamBuilder: React.FC = () => {
             className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-blue-500/20 active:scale-95 transition-all"
           >
             <Sparkles className="w-4 h-4 text-yellow-300 animate-bounce" />
-            Autobuild from Box
+            Smart AI Autobuild
           </button>
         )}
       </div>
@@ -473,14 +471,16 @@ export const TeamBuilder: React.FC = () => {
               const hasWarn = char ? hasSameNameWarning(char, idx) : false;
               const boostVal = char ? (analysis.boosts.find(b => b.member.id === char.id)?.total ?? 0) : 0;
               const activeLinksCount = char ? getSharedLinksWithTeam(char, idx).length : 0;
-              const metaInfo = char ? getStrictMetaTier(char) : null;
+              const evalInfo = char?.meta_evaluation || { tier: 'F' };
 
               return (
                 <div
                   key={idx}
                   onClick={() => {
                     setHighlightedSlotIdx(idx);
-                    setActiveSlotIdx(idx);
+                    if (!char) {
+                      setActiveSlotIdx(idx);
+                    }
                   }}
                   className={`bg-[#161F30]/80 border rounded-2xl p-4 flex flex-col items-center justify-between min-h-[260px] transition-all cursor-pointer relative group ${
                     highlightedSlotIdx === idx 
@@ -518,6 +518,33 @@ export const TeamBuilder: React.FC = () => {
                         element={char.element}
                         size="md"
                       />
+                      
+                      {/* Action Overlays for filled slots */}
+                      <div className="absolute inset-0 bg-black/60 rounded-xl flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                        <button
+                          type="button"
+                          title="View Profile"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setViewingProfileChar(char);
+                          }}
+                          className="bg-blue-600 hover:bg-blue-500 text-white p-1.5 rounded-lg shadow-md transition-all active:scale-90"
+                        >
+                          <Info className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          title="Change Character"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setActiveSlotIdx(idx);
+                          }}
+                          className="bg-indigo-600 hover:bg-indigo-500 text-white p-1.5 rounded-lg shadow-md transition-all active:scale-90"
+                        >
+                          <Search className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
@@ -539,9 +566,9 @@ export const TeamBuilder: React.FC = () => {
                     <div className="text-center w-full mt-2.5 space-y-1">
                       <p className="text-[10px] font-extrabold text-white truncate px-1 leading-tight">{char.name}</p>
                       
-                      {metaInfo && (
-                        <p className={`text-[8px] font-black tracking-wide border rounded px-1 py-0.2 mx-auto w-max leading-none my-0.5 ${metaInfo.style}`}>
-                          {metaInfo.label}
+                      {evalInfo.tier && (
+                        <p className={`text-[8px] font-black tracking-wide border rounded px-1.5 py-0.2 mx-auto w-max leading-none my-0.5 ${getTierBadgeStyle(evalInfo.tier)}`}>
+                          {evalInfo.tier} Tier
                         </p>
                       )}
 
@@ -610,9 +637,11 @@ export const TeamBuilder: React.FC = () => {
                   <div className="min-w-0 flex-1">
                     <span className="text-[9px] font-black uppercase text-blue-400 leading-none">Slot {highlightedSlotIdx + 1} Profile</span>
                     <h4 className="text-sm font-bold text-white truncate leading-tight mt-0.5">{highlightedChar.name}</h4>
-                    <span className={`inline-block text-[8px] font-black border rounded px-1.5 py-0.2 mt-1 ${getStrictMetaTier(highlightedChar).style}`}>
-                      {getStrictMetaTier(highlightedChar).label}
-                    </span>
+                    {highlightedChar.meta_evaluation?.tier && (
+                      <span className={`inline-block text-[8px] font-black border rounded px-1.5 py-0.2 mt-1 ${getTierBadgeStyle(highlightedChar.meta_evaluation.tier)}`}>
+                        {highlightedChar.meta_evaluation.tier} Tier ({highlightedChar.meta_evaluation.slot})
+                      </span>
+                    )}
                   </div>
                 </div>
 
@@ -631,7 +660,7 @@ export const TeamBuilder: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Best linking partners lists */}
+                {/* Best linking partners lists based on box assets & meta parameters */}
                 <div className="space-y-3 pt-2 border-t border-[#23324C]/60">
                   <div className="flex justify-between items-center">
                     <span className="block text-xs font-bold uppercase tracking-wider text-emerald-400">Best Partners (Box)</span>
@@ -640,7 +669,7 @@ export const TeamBuilder: React.FC = () => {
 
                   <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
                     {getLinkingPartnerRecommendations(highlightedChar, 5).map((item) => {
-                      const partnerMeta = getStrictMetaTier(item.char);
+                      const partnerTier = item.char.meta_evaluation?.tier || 'F';
                       return (
                         <div
                           key={item.char.id}
@@ -668,8 +697,8 @@ export const TeamBuilder: React.FC = () => {
                             <p className="text-[10px] font-bold text-white truncate leading-tight group-hover:text-emerald-400 transition-colors">{item.char.name}</p>
                             <div className="flex items-center justify-between gap-2 mt-0.5">
                               <p className="text-[8px] font-medium text-gray-400 truncate">Shares: {item.sharedLinks.length} Links</p>
-                              <span className={`text-[7px] font-extrabold border rounded px-1 scale-90 origin-right ${partnerMeta.style}`}>
-                                {partnerMeta.label.split(' ')[0]}
+                              <span className={`text-[7px] font-extrabold border rounded px-1 scale-90 origin-right ${getTierBadgeStyle(partnerTier)}`}>
+                                {partnerTier}
                               </span>
                             </div>
                           </div>
@@ -691,7 +720,7 @@ export const TeamBuilder: React.FC = () => {
         </div>
       </div>
 
-      {/* Select Character Modal */}
+      {/* Select Character Selection Modal */}
       <AnimatePresence>
         {activeSlotIdx !== null && (
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
@@ -712,7 +741,7 @@ export const TeamBuilder: React.FC = () => {
               <div className="p-8 space-y-6 flex flex-col h-full overflow-y-auto">
                 <div className="space-y-1">
                   <h3 className="text-lg font-extrabold text-white">Select Character</h3>
-                  <p className="text-xs text-gray-400">Choose a card. Sorted automatically by modern tier power, synergy & links match.</p>
+                  <p className="text-xs text-gray-400">Choose a card. Sorted automatically by live database meta tier layers, synergy & links match.</p>
                 </div>
 
                 {/* Filter / Search Inputs */}
@@ -756,7 +785,7 @@ export const TeamBuilder: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Candidates List */}
+                {/* Candidates List Displaying Database Tiers */}
                 <div className="space-y-2 overflow-y-auto pr-1">
                   {getCandidates().map((char) => {
                     const otherMembers = team.filter((s, idx) => s.character && idx !== activeSlotIdx).map(s => s.character) as Character[];
@@ -770,7 +799,7 @@ export const TeamBuilder: React.FC = () => {
                     const fBoost = friend ? evaluateLeaderSkill(friend, char).pct : 0;
                     const totalBoost = lBoost + fBoost;
                     const hasWarn = hasSameNameWarning(char, activeSlotIdx);
-                    const candidateMeta = getStrictMetaTier(char);
+                    const cardTier = char.meta_evaluation?.tier || 'F';
 
                     return (
                       <button
@@ -790,8 +819,8 @@ export const TeamBuilder: React.FC = () => {
                           <div className="flex items-center justify-between gap-2">
                             <p className="text-[10px] font-semibold text-gray-400 truncate leading-none">{char.subname}</p>
                             <div className="flex items-center gap-1.5">
-                              <span className={`text-[8px] font-black border rounded px-1.5 py-0.2 tracking-wide uppercase leading-none ${candidateMeta.style}`}>
-                                {candidateMeta.label}
+                              <span className={`text-[8px] font-black border rounded px-1.5 py-0.2 tracking-wide uppercase leading-none ${getTierBadgeStyle(cardTier)}`}>
+                                {cardTier} Tier
                               </span>
                               {hasWarn && (
                                 <span className="text-[8px] font-black text-amber-400 bg-amber-500/10 px-1 py-0.2 rounded uppercase leading-none">
@@ -825,6 +854,224 @@ export const TeamBuilder: React.FC = () => {
                       No matching characters found.
                     </div>
                   )}
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Full Integrated Profile Viewer Modal (Matches Catalog Mechanics perfectly) */}
+      <AnimatePresence>
+        {viewingProfileChar && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-[#161F30] border border-[#23324C] w-full max-w-3xl rounded-3xl overflow-hidden shadow-2xl relative flex flex-col max-h-[85vh]"
+            >
+              {/* Modal header accent */}
+              <div className={`h-2 bg-gradient-to-r ${
+                ELEMENT_MAP[viewingProfileChar.element]?.class === 'Super' 
+                  ? 'from-blue-500 to-emerald-500' 
+                  : 'from-purple-500 to-red-500'
+              }`} />
+              
+              {/* Close Button */}
+              <button
+                onClick={() => setViewingProfileChar(null)}
+                className="absolute top-4 right-4 bg-gray-900/60 hover:bg-gray-800 text-gray-400 hover:text-white p-2 rounded-xl transition-colors z-10"
+              >
+                <X className="w-5 h-5" />
+              </button>
+
+              {/* Scrollable Profile Content */}
+              <div className="p-8 overflow-y-auto space-y-6">
+                <div className="flex flex-col sm:flex-row gap-6 items-start">
+                  <DokkanCard
+                    cardId={viewingProfileChar.id}
+                    name={viewingProfileChar.name}
+                    rarity={viewingProfileChar.rarity}
+                    element={viewingProfileChar.element}
+                    size="xl"
+                    className="shrink-0"
+                  />
+                  <div className="space-y-2">
+                    <div className="flex flex-wrap gap-2 items-center">
+                      <span className={`px-2.5 py-0.5 rounded text-[10px] font-extrabold text-white tracking-wider ${
+                        ELEMENT_MAP[viewingProfileChar.element]?.color
+                      }`}>
+                        {ELEMENT_MAP[viewingProfileChar.element]?.label}
+                      </span>
+                      <span className="px-2.5 py-0.5 rounded bg-gray-800 border border-gray-700 text-[10px] font-extrabold text-gray-300 tracking-wider">
+                        {RARITY_MAP[viewingProfileChar.rarity]}
+                      </span>
+                    </div>
+                    <p className="text-sm font-semibold text-blue-400 leading-none">{viewingProfileChar.subname}</p>
+                    <h3 className="text-2xl font-extrabold text-white tracking-tight leading-tight">{viewingProfileChar.name}</h3>
+                  </div>
+                </div>
+
+                {/* AI Evaluation Framework Summary */}
+                {(() => {
+                  const evalResult = viewingProfileChar.meta_evaluation || {
+                    tier: 'F',
+                    viability: 'Pending Evaluation',
+                    slot: 'Floater',
+                    verdict: 'No evaluation parameters found for this asset in the active storage layer.',
+                    pros: [],
+                    cons: []
+                  };
+
+                  return (
+                    <div className="bg-[#0B0F19]/40 border border-[#23324C]/60 rounded-2xl p-5 space-y-4 shadow-inner">
+                      <div className="flex flex-wrap gap-4 items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className={`w-14 h-14 rounded-full bg-gradient-to-r flex items-center justify-center font-black text-2xl tracking-tighter shadow-lg shrink-0 border ${getTierBadgeStyle(evalResult.tier)}`}>
+                            {evalResult.tier}
+                          </div>
+                          <div>
+                            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block">Meta Evaluation Rating</span>
+                            <span className="text-sm font-extrabold text-white">
+                              {evalResult.viability} &bull; {evalResult.slot} Recommendation
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <p className="text-xs text-gray-300 leading-relaxed font-medium bg-[#0B0F19]/40 p-3 rounded-xl border border-[#23324C]/40">
+                        {evalResult.verdict}
+                      </p>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-1.5">
+                          <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider block">Strengths</span>
+                          <ul className="space-y-1">
+                            {evalResult.pros.map((pro, i) => (
+                              <li key={i} className="text-[11px] text-gray-300 flex items-center gap-1.5 font-medium">
+                                <ThumbsUp className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                                {pro}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                        <div className="space-y-1.5">
+                          <span className="text-[10px] font-bold text-red-400 uppercase tracking-wider block">Weaknesses</span>
+                          <ul className="space-y-1">
+                            {evalResult.cons.map((con, i) => (
+                              <li key={i} className="text-[11px] text-gray-300 flex items-center gap-1.5 font-medium">
+                                <ThumbsDown className="w-3.5 h-3.5 text-red-400 shrink-0" />
+                                {con}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
+
+                {/* Level Stat Matrix Toggles */}
+                <div className="space-y-3">
+                  <div className="flex gap-2 bg-[#0B0F19]/40 p-1 rounded-xl border border-[#23324C]/60 w-fit">
+                    {(['base', 'max', 'rainbow'] as const).map((tab) => (
+                      <button
+                        key={tab}
+                        onClick={() => setStatTab(tab)}
+                        className={`px-3 py-1 text-[10px] font-extrabold uppercase rounded-lg transition-all ${
+                          statTab === tab ? 'bg-blue-600 text-white shadow-md' : 'text-gray-400 hover:text-white'
+                        }`}
+                      >
+                        {tab === 'base' ? 'Base Lvl 1' : tab === 'max' ? 'Max Lvl (EZA)' : 'Rainbow (100%)'}
+                      </button>
+                    ))}
+                  </div>
+
+                  {viewingProfileChar.max_hp !== null && (
+                    <div className="grid grid-cols-3 gap-4 bg-[#0B0F19]/60 p-4 rounded-2xl border border-[#23324C]">
+                      <div className="text-center space-y-0.5">
+                        <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">HP</span>
+                        <p className="text-lg font-black text-white">
+                          {(statTab === 'base' ? viewingProfileChar.base_hp : statTab === 'max' ? viewingProfileChar.max_hp : viewingProfileChar.rainbow_hp)?.toLocaleString() ?? '-'}
+                        </p>
+                      </div>
+                      <div className="text-center space-y-0.5 border-x border-[#23324C]">
+                        <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">ATK</span>
+                        <p className="text-lg font-black text-white">
+                          {(statTab === 'base' ? viewingProfileChar.base_atk : statTab === 'max' ? viewingProfileChar.max_atk : viewingProfileChar.rainbow_atk)?.toLocaleString() ?? '-'}
+                        </p>
+                      </div>
+                      <div className="text-center space-y-0.5">
+                        <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">DEF</span>
+                        <p className="text-lg font-black text-white">
+                          {(statTab === 'base' ? viewingProfileChar.base_def : statTab === 'max' ? viewingProfileChar.max_def : viewingProfileChar.rainbow_def)?.toLocaleString() ?? '-'}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Full Descriptions Details */}
+                <div className="space-y-4">
+                  {viewingProfileChar.leader_skill && (
+                    <div className="space-y-1.5">
+                      <span className="block text-xs font-bold uppercase tracking-wider text-blue-400">Leader Skill</span>
+                      <div className="bg-[#0B0F19]/40 p-4 rounded-xl border border-[#23324C] text-sm text-gray-300 font-medium leading-relaxed whitespace-pre-line">
+                        {viewingProfileChar.leader_skill}
+                      </div>
+                    </div>
+                  )}
+
+                  {viewingProfileChar.passive_skill_name && (
+                    <div className="space-y-1.5">
+                      <span className="block text-xs font-bold uppercase tracking-wider text-emerald-400">
+                        Passive: {viewingProfileChar.passive_skill_name}
+                      </span>
+                      <div className="bg-[#0B0F19]/40 p-4 rounded-xl border border-[#23324C] text-sm text-gray-300 font-medium leading-relaxed whitespace-pre-line">
+                        {viewingProfileChar.passive_skill_description}
+                      </div>
+                    </div>
+                  )}
+
+                  {viewingProfileChar.active_skill_name && (
+                    <div className="space-y-1.5">
+                      <span className="block text-xs font-bold uppercase tracking-wider text-purple-400">
+                        Active: {viewingProfileChar.active_skill_name}
+                      </span>
+                      <div className="bg-[#0B0F19]/40 p-4 rounded-xl border border-[#23324C] text-sm text-gray-300 font-medium leading-relaxed whitespace-pre-line">
+                        <p className="font-bold text-white text-xs mb-1.5 uppercase text-purple-400">Condition:</p>
+                        <p className="mb-3 text-xs italic text-gray-400">{viewingProfileChar.active_skill_condition}</p>
+                        <p className="font-bold text-white text-xs mb-1.5 uppercase text-purple-400">Effect:</p>
+                        <p>{viewingProfileChar.active_skill_effect}</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Categories & Links breakdown */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
+                  <div className="space-y-2">
+                    <span className="block text-xs font-bold uppercase tracking-wider text-gray-400">Link Skills</span>
+                    <div className="flex flex-wrap gap-1.5">
+                      {viewingProfileChar.link_ids.map(id => (
+                        <span key={id} className="px-2.5 py-1 bg-gray-800/80 border border-gray-700 text-xs text-gray-300 font-semibold rounded-lg">
+                          {getLinkName(id)}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <span className="block text-xs font-bold uppercase tracking-wider text-gray-400">Categories</span>
+                    <div className="flex flex-wrap gap-1.5">
+                      {viewingProfileChar.category_ids.map(id => (
+                        <span key={id} className="px-2.5 py-1 bg-blue-900/10 border border-blue-500/20 text-xs text-blue-300 font-semibold rounded-lg">
+                          {getCategoryName(id)}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
                 </div>
               </div>
             </motion.div>
