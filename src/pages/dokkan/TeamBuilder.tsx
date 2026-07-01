@@ -15,7 +15,8 @@ import {
   TrendingUp,
   AlertTriangle,
   ChevronDown,
-  Filter
+  Filter,
+  Crown
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -62,7 +63,7 @@ interface Character {
 }
 
 interface TeamSlot {
-  role: 'Rotation 1 - Slot 1 (Tank)' | 'Rotation 1 - Slot 2 (DPS)' | 'Rotation 2 - Slot 1 (Tank)' | 'Rotation 2 - Slot 2 (DPS)' | 'Floater (Slot 3)' | 'Floater 2 (Slot 3)' | 'Friend Leader';
+  role: 'Rotation 1 - Slot 1 (Tank)' | 'Rotation 1 - Slot 2 (DPS)' | 'Rotation 2 - Slot 1 (Tank)' | 'Rotation 2 - Slot 2 (DPS)' | 'Floater 1 (Slot 3)' | 'Floater 2 (Slot 3)' | 'Friend Leader Flex';
   character: Character | null;
 }
 
@@ -71,8 +72,9 @@ export const TeamBuilder: React.FC = () => {
   const [allCharacters, setAllCharacters] = useState<Character[]>([]);
   const [boxIds, setBoxIds] = useState<number[]>([]);
   const [highlightedSlotIdx, setHighlightedSlotIdx] = useState<number>(0);
+  const [leaderSlotIdx, setLeaderSlotIdx] = useState<number>(0); // Tracks which slot anchors team-wide leader boosts
 
-  // Team slots configuration
+  // Tactical Pro-Rotation Grid slots
   const [team, setTeam] = useState<TeamSlot[]>([
     { role: 'Rotation 1 - Slot 1 (Tank)', character: null }, // Index 0
     { role: 'Rotation 1 - Slot 2 (DPS)', character: null },  // Index 1
@@ -80,7 +82,7 @@ export const TeamBuilder: React.FC = () => {
     { role: 'Rotation 2 - Slot 2 (DPS)', character: null },  // Index 3
     { role: 'Floater (Slot 3)', character: null },           // Index 4
     { role: 'Floater 2 (Slot 3)', character: null },         // Index 5
-    { role: 'Friend Leader', character: null },              // Index 6
+    { role: 'Friend Leader Flex', character: null },         // Index 6
   ]);
 
   // Modal selector and viewer states
@@ -114,7 +116,6 @@ export const TeamBuilder: React.FC = () => {
     fetchData();
   }, [user]);
 
-  // Lock background scrolling
   useEffect(() => {
     if (activeSlotIdx !== null || viewingProfileChar !== null) {
       document.body.style.overflow = 'hidden';
@@ -258,7 +259,7 @@ export const TeamBuilder: React.FC = () => {
     }
 
     if (activeSlotIdx !== null) {
-      const leader = team[0].character || team[1].character || team[4].character;
+      const leader = team[leaderSlotIdx]?.character;
 
       let rotationPartner: Character | null = null;
       if (activeSlotIdx === 0) rotationPartner = team[1].character;
@@ -268,7 +269,7 @@ export const TeamBuilder: React.FC = () => {
 
       const scoredList = list
         .map(c => {
-          const lBoost = leader ? evaluateLeaderSkill(leader, c).pct : 0;
+          const lBoost = leader ? evaluateLeaderSkill(leader, c).pct : 170;
           
           let sharedLinksCount = 0;
           if (rotationPartner) {
@@ -289,7 +290,7 @@ export const TeamBuilder: React.FC = () => {
             sameName: hasSameNameWarning(c, activeSlotIdx)
           };
         })
-        .filter(item => activeSlotIdx === 0 || leader === null || item.lBoost > 0);
+        .filter(item => leader === null || item.lBoost > 0);
 
       scoredList.sort((a, b) => {
         if (a.sameName !== b.sameName) return a.sameName ? 1 : -1;
@@ -306,7 +307,7 @@ export const TeamBuilder: React.FC = () => {
 
   const getLinkingPartnerRecommendations = (char: Character, limit = 5) => {
     let list = onlyBox ? allCharacters.filter(c => boxIds.includes(c.id)) : allCharacters;
-    const leader = team[0].character || team[1].character || team[4].character;
+    const leader = team[leaderSlotIdx]?.character;
     
     if (selectedEventCategory !== null) {
       list = list.filter(c => c.category_ids?.includes(selectedEventCategory));
@@ -338,8 +339,11 @@ export const TeamBuilder: React.FC = () => {
   };
 
   const handleAutobuild = () => {
-    const primaryInputLeader = team[0].character || team[1].character || team[4].character;
-    if (!primaryInputLeader) return;
+    const primaryInputLeader = team[leaderSlotIdx]?.character;
+    if (!primaryInputLeader) {
+      alert("Please select a character in any slot first and set them as Leader Anchor to start the intelligent Pro-Build system!");
+      return;
+    }
 
     let pool = allCharacters.filter(c => boxIds.includes(c.id) && c.id !== primaryInputLeader.id);
     if (selectedEventCategory !== null) {
@@ -357,16 +361,22 @@ export const TeamBuilder: React.FC = () => {
     const usedNames = new Set<string>([primaryInputLeader.name]);
     const builtTeam: (Character | null)[] = [null, null, null, null, null, null];
 
-    const leaderSlotRole = primaryInputLeader.meta_evaluation?.slot || 'Slot 1';
+    const leaderSlotRole = primaryInputLeader.meta_evaluation?.slot || 'Slot 2';
+    let newLeaderIdx = 0;
 
+    // Smart Shift Pipeline: Moves Leader dynamically according to ideal tactical slot fitness profile
     if (leaderSlotRole === 'Slot 1') {
       builtTeam[0] = primaryInputLeader;
+      newLeaderIdx = 0;
     } else if (leaderSlotRole === 'Slot 2') {
       builtTeam[1] = primaryInputLeader;
+      newLeaderIdx = 1;
     } else {
       builtTeam[4] = primaryInputLeader;
+      newLeaderIdx = 4;
     }
 
+    // --- FILL ROTATION 1 DEPENDENCIES ---
     if (builtTeam[0] && !builtTeam[1]) {
       let bestBridge = pool
         .filter(c => !usedNames.has(c.name))
@@ -391,25 +401,9 @@ export const TeamBuilder: React.FC = () => {
       if (bestTank) {
         builtTeam[0] = bestTank.char; usedIds.add(bestTank.char.id); usedNames.add(bestTank.char.name);
       }
-    } else if (!builtTeam[0] && !builtTeam[1]) {
-      let bestTank = pool
-        .filter(c => c.meta_evaluation?.slot === 'Slot 1')
-        .sort((a, b) => getTierWeight(b.meta_evaluation?.tier || 'F') - getTierWeight(a.meta_evaluation?.tier || 'F'))[0];
-      if (bestTank) {
-        builtTeam[0] = bestTank; usedIds.add(bestTank.id); usedNames.add(bestTank.name);
-        let bestBridge = pool
-          .filter(c => !usedNames.has(c.name) && !usedIds.has(c.id))
-          .map(c => {
-            const boost = evaluateLeaderSkill(primaryInputLeader, c).pct;
-            const links = (c.link_ids || []).filter(l => bestTank.link_ids?.includes(l)).length;
-            return { char: c, score: (links * 300) + (boost * 20) };
-          }).sort((a, b) => b.score - a.score)[0];
-        if (bestBridge) {
-          builtTeam[1] = bestBridge.char; usedIds.add(bestBridge.char.id); usedNames.add(bestBridge.char.name);
-        }
-      }
     }
 
+    // --- FILL ROTATION 2 DEPENDENCIES ---
     let r2Tank = pool
       .filter(c => !usedNames.has(c.name) && !usedIds.has(c.id) && c.meta_evaluation?.slot === 'Slot 1')
       .map(c => {
@@ -438,6 +432,7 @@ export const TeamBuilder: React.FC = () => {
       }
     }
 
+    // --- FILL REMAINING PRO-FLOATERS ---
     for (let i = 4; i <= 5; i++) {
       if (builtTeam[i]) continue;
       let bestFloater = pool
@@ -462,11 +457,12 @@ export const TeamBuilder: React.FC = () => {
       return copy;
     });
 
-    setHighlightedSlotIdx(0);
+    setLeaderSlotIdx(newLeaderIdx);
+    setHighlightedSlotIdx(newLeaderIdx);
   };
 
   const computeTeamAnalysis = () => {
-    const leader = team[0].character || team[1].character || team[4].character;
+    const leader = team[leaderSlotIdx]?.character;
     const friend = team[6].character;
     const members = team.filter(slot => slot.character !== null).map(slot => slot.character) as Character[];
 
@@ -581,9 +577,16 @@ export const TeamBuilder: React.FC = () => {
                       highlightedSlotIdx === idx ? 'border-blue-500 ring-1 ring-blue-500/20 bg-[#161F30]' : 'border-[#23324C]'
                     }`}
                   >
-                    <span className={`text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full mb-2 bg-blue-500/20 text-blue-400 border border-blue-500/30`}>
-                      {slot.role}
-                    </span>
+                    <div className="w-full flex justify-between items-center mb-2">
+                      <span className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-400 border border-blue-500/30">
+                        {slot.role}
+                      </span>
+                      {leaderSlotIdx === idx && (
+                        <span className="flex items-center gap-1 text-[9px] font-black text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-full">
+                          <Crown className="w-3 h-3 text-amber-400" /> Leader
+                        </span>
+                      )}
+                    </div>
 
                     {hasWarn && (
                       <div className="absolute top-2 right-2 bg-amber-500 text-black p-1 rounded-lg z-20 shadow-md animate-pulse">
@@ -599,14 +602,14 @@ export const TeamBuilder: React.FC = () => {
                           <button
                             type="button"
                             onClick={(e) => { e.stopPropagation(); setViewingProfileChar(char); }}
-                            className="bg-blue-600 hover:bg-blue-500 text-white p-1.5 rounded-lg shadow-md"
+                            className="bg-blue-600 hover:bg-blue-500 text-white p-1.5 rounded-lg shadow-md text-xs font-bold"
                           >
                             Profile
                           </button>
                           <button
                             type="button"
                             onClick={(e) => { e.stopPropagation(); setActiveSlotIdx(idx); }}
-                            className="bg-indigo-600 hover:bg-indigo-500 text-white p-1.5 rounded-lg shadow-md"
+                            className="bg-indigo-600 hover:bg-indigo-500 text-white p-1.5 rounded-lg shadow-md text-xs font-bold"
                           >
                             Swap
                           </button>
@@ -666,19 +669,21 @@ export const TeamBuilder: React.FC = () => {
                 return (
                   <div
                     key={idx}
-                    onClick={() => {
-                      setHighlightedSlotIdx(idx);
-                      if (!char) {
-                        setActiveSlotIdx(idx);
-                      }
-                    }}
+                    onClick={() => { setHighlightedSlotIdx(idx); if (!char) setActiveSlotIdx(idx); }}
                     className={`bg-[#161F30]/80 border rounded-2xl p-4 flex flex-col items-center justify-between min-h-[260px] transition-all cursor-pointer relative group ${
-                      highlightedSlotIdx === idx ? 'border-blue-500 ring-1 ring-blue-500/20 bg-[#161F30]' : 'border-[#23324C]'
+                      highlightedSlotIdx === idx ? 'border-purple-500 ring-1 ring-purple-500/20 bg-[#161F30]' : 'border-[#23324C]'
                     }`}
                   >
-                    <span className={`text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full mb-2 bg-purple-500/20 text-purple-400 border border-purple-500/30`}>
-                      {slot.role}
-                    </span>
+                    <div className="w-full flex justify-between items-center mb-2">
+                      <span className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-400 border border-purple-500/30">
+                        {slot.role}
+                      </span>
+                      {leaderSlotIdx === idx && (
+                        <span className="flex items-center gap-1 text-[9px] font-black text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-full">
+                          <Crown className="w-3 h-3 text-amber-400" /> Leader
+                        </span>
+                      )}
+                    </div>
 
                     {hasWarn && (
                       <div className="absolute top-2 right-2 bg-amber-500 text-black p-1 rounded-lg z-20 shadow-md animate-pulse">
@@ -691,8 +696,8 @@ export const TeamBuilder: React.FC = () => {
                         <DokkanCard cardId={char.id} name={char.name} rarity={char.rarity} element={char.element} size="md" />
                         
                         <div className="absolute inset-0 bg-black/60 rounded-xl flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                          <button type="button" onClick={(e) => { e.stopPropagation(); setViewingProfileChar(char); }} className="bg-blue-600 p-1 rounded-lg text-white"><HelpCircle className="w-3.5 h-3.5" /></button>
-                          <button type="button" onClick={(e) => { e.stopPropagation(); setActiveSlotIdx(idx); }} className="bg-indigo-600 p-1 rounded-lg text-white"><Search className="w-3.5 h-3.5" /></button>
+                          <button type="button" onClick={(e) => { e.stopPropagation(); setViewingProfileChar(char); }} className="bg-blue-600 p-1 rounded-lg text-white text-xs font-bold px-2 py-1">Profile</button>
+                          <button type="button" onClick={(e) => { e.stopPropagation(); setActiveSlotIdx(idx); }} className="bg-indigo-600 p-1 rounded-lg text-white text-xs font-bold px-2 py-1">Swap</button>
                         </div>
 
                         <button onClick={(e) => { e.stopPropagation(); handleRemoveCharacter(idx); }} className="absolute -top-1.5 -right-1.5 bg-red-500 text-white p-1 rounded-full z-20 opacity-0 group-hover:opacity-100"><X className="w-3 h-3" /></button>
@@ -746,7 +751,15 @@ export const TeamBuilder: React.FC = () => {
                       highlightedSlotIdx === idx ? 'border-gray-500 bg-[#161F30]' : 'border-[#23324C]'
                     }`}
                   >
-                    <span className="text-[8px] font-black uppercase text-gray-400 bg-gray-800 px-2 py-0.5 rounded-full">{slot.role}</span>
+                    <div className="w-full flex justify-between items-center mb-1">
+                      <span className="text-[8px] font-black uppercase text-gray-400 bg-gray-800 px-2 py-0.5 rounded-full">{slot.role}</span>
+                      {leaderSlotIdx === idx && (
+                        <span className="flex items-center gap-0.5 text-[8px] font-black text-amber-400 bg-amber-500/10 border border-amber-500/20 px-1.5 py-0.2 rounded-full">
+                          <Crown className="w-2.5 h-2.5 text-amber-400" /> Leader
+                        </span>
+                      )}
+                    </div>
+                    
                     <div className="relative my-2">
                       {char ? (
                         <>
@@ -768,7 +781,7 @@ export const TeamBuilder: React.FC = () => {
                         <span className="text-[7px] font-black text-emerald-400 bg-emerald-500/10 rounded w-max mx-auto px-1">+{boostVal}% Boost</span>
                       </div>
                     )}
-                    {hasWarn && <div className="absolute top-2 right-2 text-amber-500"><AlertTriangle className="w-3.5 h-3.5" /></div>}
+                    {hasWarn && <div className="absolute top-2 right-2 bg-amber-500 p-1 rounded"><AlertTriangle className="w-3.5 h-3.5 text-black" /></div>}
                   </div>
                 );
               })}
@@ -795,6 +808,19 @@ export const TeamBuilder: React.FC = () => {
                     )}
                   </div>
                 </div>
+
+                {/* Strategy Assignment: Manually flag who delivers the global leader criteria */}
+                <button
+                  type="button"
+                  onClick={() => setLeaderSlotIdx(highlightedSlotIdx)}
+                  className={`w-full py-2 rounded-xl text-xs font-black border tracking-wide transition-all ${
+                    leaderSlotIdx === highlightedSlotIdx 
+                      ? 'bg-amber-500/20 text-amber-400 border-amber-500/40 shadow-inner' 
+                      : 'bg-[#0B0F19]/60 text-gray-400 border-[#23324C] hover:text-white hover:bg-[#1C283F]'
+                  }`}
+                >
+                  {leaderSlotIdx === highlightedSlotIdx ? '👑 Active Team Leader Anchor' : 'Set as Team Leader'}
+                </button>
 
                 <div className="space-y-2">
                   <span className="block text-xs font-bold uppercase tracking-wider text-indigo-400">Rotation Active Links ({getSharedLinksWithTeam(highlightedChar, highlightedSlotIdx).length})</span>
@@ -890,7 +916,7 @@ export const TeamBuilder: React.FC = () => {
 
                 <div className="space-y-2 overflow-y-auto pr-1">
                   {getCandidates().map((char) => {
-                    const leader = team[0].character || team[1].character || team[4].character;
+                    const leader = team[leaderSlotIdx]?.character;
                     const friend = team[6].character;
                     const lBoost = leader ? evaluateLeaderSkill(leader, char).pct : 0;
                     const fBoost = friend ? evaluateLeaderSkill(friend, char).pct : 0;
