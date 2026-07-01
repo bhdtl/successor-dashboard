@@ -16,7 +16,8 @@ import {
   TrendingUp,
   AlertTriangle,
   ThumbsUp,
-  ThumbsDown
+  ThumbsDown,
+  Info
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
