@@ -3,18 +3,30 @@ import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
 import { ELEMENT_MAP } from './DokkanCatalog';
 import { DokkanCard } from '../../components/DokkanCard';
+import categoriesData from '../../data/categories.json';
+import linksData from '../../data/links.json';
 import { 
   FolderHeart, 
   Trash2, 
-  Star, 
-  Save, 
   TrendingUp,
   Loader,
   Search,
-  BookOpen,
-  X
+  X,
+  Shield,
+  Flame,
+  Award,
+  ThumbsUp,
+  ThumbsDown
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+
+export const RARITY_MAP: Record<number, string> = {
+  1: 'N',
+  2: 'R',
+  3: 'SSR',
+  4: 'UR',
+  5: 'LR',
+};
 
 interface BoxItem {
   user_id: string;
@@ -31,9 +43,31 @@ interface BoxItem {
     subname: string;
     rarity: number;
     element: number;
+    leader_skill: string;
+    passive_skill_name?: string;
+    passive_skill_description?: string;
+    active_skill_name?: string;
+    active_skill_condition?: string;
+    active_skill_effect?: string;
+    category_ids: number[];
+    link_ids: number[];
     max_hp: number | null;
     max_atk: number | null;
     max_def: number | null;
+    base_hp: number | null;
+    base_atk: number | null;
+    base_def: number | null;
+    rainbow_hp: number | null;
+    rainbow_atk: number | null;
+    rainbow_def: number | null;
+    meta_evaluation?: {
+      tier: string;
+      viability: string;
+      slot: string;
+      verdict: string;
+      pros: string[];
+      cons: string[];
+    } | null;
   };
 }
 
@@ -43,16 +77,25 @@ export const DokkanBox: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Selected item for box editing modal
-  const [editingItem, setEditingItem] = useState<BoxItem | null>(null);
-  const [saveLoading, setSaveLoading] = useState(false);
-  const [editPotential, setEditPotential] = useState(0);
-  const [editRating, setEditRating] = useState<number | null>(null);
-  const [editNotes, setEditNotes] = useState('');
+  // Profile modal viewing state tracking the active player profile layout
+  const [viewingProfileChar, setViewingProfileChar] = useState<BoxItem['character'] | null>(null);
+  const [statTab, setStatTab] = useState<'base' | 'max' | 'rainbow'>('max');
 
   useEffect(() => {
     fetchBoxItems();
   }, [user]);
+
+  // Lock background scroll when character profile modal is open
+  useEffect(() => {
+    if (viewingProfileChar !== null) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [viewingProfileChar]);
 
   const fetchBoxItems = async () => {
     if (!user) return;
@@ -77,47 +120,8 @@ export const DokkanBox: React.FC = () => {
     }
   };
 
-  const handleOpenEdit = (item: BoxItem) => {
-    setEditingItem(item);
-    setEditPotential(item.potential_percentage);
-    setEditRating(item.my_rating);
-    setEditNotes(item.my_notes || '');
-  };
-
-  const handleSaveEdit = async () => {
-    if (!user || !editingItem) return;
-    setSaveLoading(true);
-
-    try {
-      const { error } = await supabase
-        .from('dokkan_user_box')
-        .update({
-          potential_percentage: editPotential,
-          my_rating: editRating,
-          my_notes: editNotes.trim() || null
-        })
-        .eq('user_id', user.id)
-        .eq('card_id', editingItem.card_id);
-
-      if (error) throw error;
-
-      // Update state locally
-      setBoxItems(prev => prev.map(item => 
-        item.card_id === editingItem.card_id
-          ? { ...item, potential_percentage: editPotential, my_rating: editRating, my_notes: editNotes }
-          : item
-      ));
-
-      setEditingItem(null);
-    } catch (err) {
-      console.error('Error saving box details:', err);
-    } finally {
-      setSaveLoading(false);
-    }
-  };
-
   const handleDeleteItem = async (e: React.MouseEvent, cardId: number) => {
-    e.stopPropagation();
+    e.stopPropagation(); // Stops the modal popup invocation trigger safely
     if (!user) return;
 
     if (!confirm('Are you sure you want to remove this character from your box?')) {
@@ -138,6 +142,27 @@ export const DokkanBox: React.FC = () => {
     }
   };
 
+  const getTierBadgeStyle = (tier: string) => {
+    const tierStyles: Record<string, string> = {
+      'Z+': 'text-red-400 bg-red-500/10 border-red-500/20',
+      'S': 'text-amber-400 bg-amber-400/10 border-amber-400/20',
+      'A': 'text-purple-400 bg-purple-400/10 border-purple-400/20',
+      'B': 'text-blue-400 bg-blue-400/10 border-blue-500/20',
+      'F': 'text-gray-500 bg-gray-800 border-gray-700'
+    };
+    return tierStyles[tier] || tierStyles['F'];
+  };
+
+  const getCategoryName = (id: number) => {
+    const cat = categoriesData.find((c: any) => c.id === id);
+    return cat ? cat.name : `Category ${id}`;
+  };
+
+  const getLinkName = (id: number) => {
+    const lk = linksData.find((l: any) => l.id === id);
+    return lk ? lk.name : `Link ${id}`;
+  };
+
   const filteredItems = boxItems.filter(item => 
     item.character?.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     item.character?.subname?.toLowerCase().includes(searchTerm.toLowerCase())
@@ -153,7 +178,7 @@ export const DokkanBox: React.FC = () => {
             My Collected Card Box
           </h1>
           <p className="text-gray-400 text-sm">
-            Evaluate, rate, and track potential paths for the characters you own.
+            Evaluate, track tiers, and verify live database standalone execution parameters.
           </p>
         </div>
 
@@ -192,11 +217,12 @@ export const DokkanBox: React.FC = () => {
             if (!char) return null;
 
             const elInfo = ELEMENT_MAP[char.element] || { type: 'AGL', class: 'Super', color: 'bg-gray-500', border: 'border-gray-400', label: 'Unknown' };
+            const evalInfo = char.meta_evaluation || { tier: 'F', viability: 'Pending Index' };
 
             return (
               <motion.div
                 key={char.id}
-                onClick={() => handleOpenEdit(item)}
+                onClick={() => setViewingProfileChar(char)} // Triggers direct catalog profile viewer popup modal
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 whileHover={{ y: -3 }}
@@ -234,9 +260,8 @@ export const DokkanBox: React.FC = () => {
                     <h4 className="font-extrabold text-sm text-white truncate leading-tight">{char.name}</h4>
                   </div>
 
-                  {/* Box Stats footer (rating, potential) */}
+                  {/* Upgraded Box Stats footer */}
                   <div className="flex items-center justify-between pt-1 border-t border-[#23324C]/40">
-                    {/* Potential percentage */}
                     <div className="flex items-center gap-1">
                       <TrendingUp className="w-3.5 h-3.5 text-emerald-400" />
                       <span className="text-[10px] font-black text-gray-300">
@@ -244,12 +269,8 @@ export const DokkanBox: React.FC = () => {
                       </span>
                     </div>
 
-                    {/* Custom rating stars */}
-                    <div className="flex items-center gap-0.5">
-                      <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
-                      <span className="text-[10px] font-black text-white">
-                        {item.my_rating !== null ? `${item.my_rating}/10` : 'Unrated'}
-                      </span>
+                    <div className={`text-[8px] font-black tracking-wide border rounded px-1.5 py-0.2 leading-none ${getTierBadgeStyle(evalInfo.tier)}`}>
+                      {evalInfo.tier} Tier
                     </div>
                   </div>
                 </div>
@@ -259,131 +280,230 @@ export const DokkanBox: React.FC = () => {
         </div>
       )}
 
-      {/* Edit Box Item details Modal */}
+      {/* Fully Integrated Profile Viewer Modal */}
       <AnimatePresence>
-        {editingItem && (
+        {viewingProfileChar && (
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-[#161F30] border border-[#23324C] w-full max-w-lg rounded-3xl overflow-hidden shadow-2xl relative flex flex-col"
+              className="bg-[#161F30] border border-[#23324C] w-full max-w-3xl rounded-3xl overflow-hidden shadow-2xl relative flex flex-col max-h-[85vh]"
             >
+              {/* Modal header accent */}
+              <div className={`h-2 bg-gradient-to-r ${
+                ELEMENT_MAP[viewingProfileChar.element]?.class === 'Super' 
+                  ? 'from-blue-500 to-emerald-500' 
+                  : 'from-purple-500 to-red-500'
+              }`} />
+              
               {/* Close Button */}
               <button
-                onClick={() => setEditingItem(null)}
+                onClick={() => setViewingProfileChar(null)}
                 className="absolute top-4 right-4 bg-gray-900/60 hover:bg-gray-800 text-gray-400 hover:text-white p-2 rounded-xl transition-colors z-10"
               >
                 <X className="w-5 h-5" />
               </button>
 
-              <div className="p-8 space-y-6">
+              {/* Scrollable Container */}
+              <div className="p-8 overflow-y-auto space-y-6">
                 {/* Header Profile */}
-                <div className="flex gap-4 items-center">
+                <div className="flex flex-col sm:flex-row gap-6 items-start">
                   <DokkanCard
-                    cardId={editingItem.card_id}
-                    name={editingItem.character?.name || ''}
-                    rarity={editingItem.character?.rarity || 3}
-                    element={editingItem.character?.element || 10}
-                    size="md"
+                    cardId={viewingProfileChar.id}
+                    name={viewingProfileChar.name}
+                    rarity={viewingProfileChar.rarity}
+                    element={viewingProfileChar.element}
+                    size="xl"
+                    className="shrink-0"
                   />
-                  <div>
-                    <p className="text-xs font-semibold text-emerald-400">{editingItem.character?.subname}</p>
-                    <h3 className="text-lg font-extrabold text-white tracking-tight leading-tight">{editingItem.character?.name}</h3>
-                  </div>
-                </div>
-
-                {/* Edit Fields */}
-                <div className="space-y-4 pt-2">
-                  {/* Potential investment */}
                   <div className="space-y-2">
-                    <label className="block text-xs font-bold uppercase tracking-wider text-gray-400">Potential Path Investment</label>
-                    <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
-                      {[0, 55, 69, 79, 90, 100].map((val) => (
-                        <button
-                          key={val}
-                          type="button"
-                          onClick={() => setEditPotential(val)}
-                          className={`py-2 rounded-xl text-xs font-bold border transition-all ${
-                            editPotential === val
-                              ? 'bg-emerald-600 text-white border-emerald-500 shadow-md shadow-emerald-600/15'
-                              : 'bg-[#0B0F19]/60 text-gray-400 hover:text-gray-200 border-[#23324C] hover:bg-[#161F30]'
-                          }`}
-                        >
-                          {val === 100 ? '100% 🌈' : `${val}%`}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Custom Evaluation Rating */}
-                  <div className="space-y-2">
-                    <label className="block text-xs font-bold uppercase tracking-wider text-gray-400">Your Evaluation Rating (1-10)</label>
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                      {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((star) => (
-                        <button
-                          key={star}
-                          type="button"
-                          onClick={() => setEditRating(star)}
-                          className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold border transition-all ${
-                            editRating === star
-                              ? 'bg-amber-500 text-white border-amber-400 shadow-md'
-                              : 'bg-[#0B0F19]/60 text-gray-400 hover:text-gray-200 border-[#23324C]'
-                          }`}
-                        >
-                          {star}
-                        </button>
-                      ))}
-                      <button
-                        type="button"
-                        onClick={() => setEditRating(null)}
-                        className="px-2.5 py-1.5 rounded-lg text-[10px] font-bold border border-transparent text-gray-500 hover:text-gray-300 transition-colors"
-                      >
-                        Clear
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Custom Notes */}
-                  <div className="space-y-2">
-                    <label className="block text-xs font-bold uppercase tracking-wider text-gray-400">Custom Strategy Notes</label>
-                    <div className="relative">
-                      <span className="absolute top-3 left-3 text-gray-500">
-                        <BookOpen className="w-4 h-4" />
+                    <div className="flex flex-wrap gap-2 items-center">
+                      <span className={`px-2.5 py-0.5 rounded text-[10px] font-extrabold text-white tracking-wider ${
+                        ELEMENT_MAP[viewingProfileChar.element]?.color
+                      }`}>
+                        {ELEMENT_MAP[viewingProfileChar.element]?.label}
                       </span>
-                      <textarea
-                        rows={3}
-                        placeholder="Write down optimal build paths, link partner reminders, or prioritizations..."
-                        value={editNotes}
-                        onChange={(e) => setEditNotes(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2.5 bg-[#0B0F19]/60 border border-[#23324C] focus:border-emerald-500 rounded-xl text-white placeholder-gray-500 focus:outline-none transition-all font-medium text-xs resize-none"
-                      />
+                      <span className="px-2.5 py-0.5 rounded bg-gray-800 border border-gray-700 text-[10px] font-extrabold text-gray-300 tracking-wider">
+                        {RARITY_MAP[viewingProfileChar.rarity]}
+                      </span>
                     </div>
+                    <p className="text-sm font-semibold text-blue-400 leading-none">{viewingProfileChar.subname}</p>
+                    <h3 className="text-2xl font-extrabold text-white tracking-tight leading-tight">{viewingProfileChar.name}</h3>
                   </div>
                 </div>
 
-                {/* Modal actions */}
-                <div className="flex gap-3 justify-end pt-2 border-t border-[#23324C]/40">
-                  <button
-                    onClick={() => setEditingItem(null)}
-                    className="px-5 py-2.5 bg-gray-800 hover:bg-gray-700 text-xs font-bold text-gray-300 rounded-xl transition-all"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={handleSaveEdit}
-                    disabled={saveLoading}
-                    className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-xs font-bold text-white rounded-xl shadow-lg shadow-emerald-600/10 flex items-center gap-1.5 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {saveLoading ? (
-                      <Loader className="w-3.5 h-3.5 animate-spin" />
-                    ) : (
-                      <>
-                        <Save className="w-3.5 h-3.5" />
-                        Save Evaluation
-                      </>
-                    )}
-                  </button>
+                {/* Overhauled Meta Evaluation Panel */}
+                {(() => {
+                  const evalResult = viewingProfileChar.meta_evaluation || {
+                    tier: 'F',
+                    viability: 'Pending Evaluation',
+                    slot: 'Floater',
+                    verdict: 'No evaluation parameters found for this asset in the active storage layer.',
+                    pros: [],
+                    cons: []
+                  };
+
+                  return (
+                    <div className="bg-[#0B0F19]/40 border border-[#23324C]/60 rounded-2xl p-5 space-y-4 shadow-inner">
+                      <div className="flex flex-wrap gap-4 items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className={`w-14 h-14 rounded-full bg-gradient-to-r flex items-center justify-center font-black text-2xl tracking-tighter shadow-lg shrink-0 border ${getTierBadgeStyle(evalResult.tier)}`}>
+                            {evalResult.tier}
+                          </div>
+                          <div>
+                            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block">Meta Evaluation Rating</span>
+                            <span className="text-sm font-extrabold text-white">
+                              {evalResult.viability} &bull; {evalResult.slot} Recommendation
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Position Badges */}
+                        <div className="flex gap-2">
+                          <span className="px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider flex items-center gap-1 bg-[#1E283F] border border-[#23324C] text-gray-300">
+                            {evalResult.slot === 'Slot 1' && <Shield className="w-3 h-3 text-blue-400 animate-pulse" />}
+                            {evalResult.slot === 'Slot 2' && <Flame className="w-3 h-3 text-red-400" />}
+                            {evalResult.slot === 'Floater' && <Award className="w-3 h-3 text-amber-400" />}
+                            {evalResult.slot}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Verdict Description */}
+                      <p className="text-xs text-gray-300 leading-relaxed font-medium bg-[#0B0F19]/40 p-3 rounded-xl border border-[#23324C]/40">
+                        {evalResult.verdict}
+                      </p>
+
+                      {/* Pros & Cons */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-1.5">
+                          <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider block">Strengths</span>
+                          <ul className="space-y-1">
+                            {evalResult.pros.map((pro, i) => (
+                              <li key={i} className="text-[11px] text-gray-300 flex items-center gap-1.5 font-medium">
+                                <ThumbsUp className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                                {pro}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                        <div className="space-y-1.5">
+                          <span className="text-[10px] font-bold text-red-400 uppercase tracking-wider block">Weaknesses</span>
+                          <ul className="space-y-1">
+                            {evalResult.cons.map((con, i) => (
+                              <li key={i} className="text-[11px] text-gray-300 flex items-center gap-1.5 font-medium">
+                                <ThumbsDown className="w-3.5 h-3.5 text-red-400 shrink-0" />
+                                {con}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
+
+                {/* Level Stat Matrix Toggles */}
+                <div className="space-y-3">
+                  <div className="flex gap-2 bg-[#0B0F19]/40 p-1 rounded-xl border border-[#23324C]/60 w-fit">
+                    {(['base', 'max', 'rainbow'] as const).map((tab) => (
+                      <button
+                        key={tab}
+                        onClick={() => setStatTab(tab)}
+                        className={`px-3 py-1 text-[10px] font-extrabold uppercase rounded-lg transition-all ${
+                          statTab === tab ? 'bg-blue-600 text-white shadow-md' : 'text-gray-400 hover:text-white'
+                        }`}
+                      >
+                        {tab === 'base' ? 'Base Lvl 1' : tab === 'max' ? 'Max Lvl (EZA)' : 'Rainbow (100%)'}
+                      </button>
+                    ))}
+                  </div>
+
+                  {viewingProfileChar.max_hp !== null && (
+                    <div className="grid grid-cols-3 gap-4 bg-[#0B0F19]/60 p-4 rounded-2xl border border-[#23324C]">
+                      <div className="text-center space-y-0.5">
+                        <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">HP</span>
+                        <p className="text-lg font-black text-white">
+                          {(statTab === 'base' ? viewingProfileChar.base_hp : statTab === 'max' ? viewingProfileChar.max_hp : viewingProfileChar.rainbow_hp)?.toLocaleString() ?? '-'}
+                        </p>
+                      </div>
+                      <div className="text-center space-y-0.5 border-x border-[#23324C]">
+                        <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">ATK</span>
+                        <p className="text-lg font-black text-white">
+                          {(statTab === 'base' ? viewingProfileChar.base_atk : statTab === 'max' ? viewingProfileChar.max_atk : viewingProfileChar.rainbow_atk)?.toLocaleString() ?? '-'}
+                        </p>
+                      </div>
+                      <div className="text-center space-y-0.5">
+                        <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">DEF</span>
+                        <p className="text-lg font-black text-white">
+                          {(statTab === 'base' ? viewingProfileChar.base_def : statTab === 'max' ? viewingProfileChar.max_def : viewingProfileChar.rainbow_def)?.toLocaleString() ?? '-'}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Skill Explanations */}
+                <div className="space-y-4">
+                  {viewingProfileChar.leader_skill && (
+                    <div className="space-y-1.5">
+                      <span className="block text-xs font-bold uppercase tracking-wider text-blue-400">Leader Skill</span>
+                      <div className="bg-[#0B0F19]/40 p-4 rounded-xl border border-[#23324C] text-sm text-gray-300 font-medium leading-relaxed whitespace-pre-line">
+                        {viewingProfileChar.leader_skill}
+                      </div>
+                    </div>
+                  )}
+
+                  {viewingProfileChar.passive_skill_name && (
+                    <div className="space-y-1.5">
+                      <span className="block text-xs font-bold uppercase tracking-wider text-emerald-400">
+                        Passive: {viewingProfileChar.passive_skill_name}
+                      </span>
+                      <div className="bg-[#0B0F19]/40 p-4 rounded-xl border border-[#23324C] text-sm text-gray-300 font-medium leading-relaxed whitespace-pre-line">
+                        {viewingProfileChar.passive_skill_description}
+                      </div>
+                    </div>
+                  )}
+
+                  {viewingProfileChar.active_skill_name && (
+                    <div className="space-y-1.5">
+                      <span className="block text-xs font-bold uppercase tracking-wider text-purple-400">
+                        Active: {viewingProfileChar.active_skill_name}
+                      </span>
+                      <div className="bg-[#0B0F19]/40 p-4 rounded-xl border border-[#23324C] text-sm text-gray-300 font-medium leading-relaxed whitespace-pre-line">
+                        <p className="font-bold text-white text-xs mb-1.5 uppercase text-purple-400">Condition:</p>
+                        <p className="mb-3 text-xs italic text-gray-400">{viewingProfileChar.active_skill_condition}</p>
+                        <p className="font-bold text-white text-xs mb-1.5 uppercase text-purple-400">Effect:</p>
+                        <p>{viewingProfileChar.active_skill_effect}</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Categories & Links breakdown */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
+                  <div className="space-y-2">
+                    <span className="block text-xs font-bold uppercase tracking-wider text-gray-400">Link Skills</span>
+                    <div className="flex flex-wrap gap-1.5">
+                      {viewingProfileChar.link_ids.map(id => (
+                        <span key={id} className="px-2.5 py-1 bg-gray-800/80 border border-gray-700 text-xs text-gray-300 font-semibold rounded-lg">
+                          {getLinkName(id)}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <span className="block text-xs font-bold uppercase tracking-wider text-gray-400">Categories</span>
+                    <div className="flex flex-wrap gap-1.5">
+                      {viewingProfileChar.category_ids.map(id => (
+                        <span key={id} className="px-2.5 py-1 bg-blue-900/10 border border-blue-500/20 text-xs text-blue-300 font-semibold rounded-lg">
+                          {getCategoryName(id)}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
                 </div>
               </div>
             </motion.div>
@@ -393,4 +513,3 @@ export const DokkanBox: React.FC = () => {
     </div>
   );
 };
-
