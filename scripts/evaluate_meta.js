@@ -150,7 +150,7 @@ Character Under Evaluation Parameters:
           "X-Title": "Dokkan SaaS Analytics Engine"
         },
         body: JSON.stringify({
-          model: "arcee-ai/trinity-mini",
+          model: "deepseek/deepseek-v4-flash", // Upgraded to DeepSeek V4 Flash for maximized execution velocity and low latency throughput
           messages: [
             { role: "system", content: systemPrompt },
             { role: "user", content: userPrompt }
