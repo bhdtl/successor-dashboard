@@ -14,8 +14,6 @@ import {
   HelpCircle,
   TrendingUp,
   AlertTriangle,
-  ThumbsUp,
-  ThumbsDown,
   ChevronDown,
   Filter
 } from 'lucide-react';
@@ -74,7 +72,7 @@ export const TeamBuilder: React.FC = () => {
   const [boxIds, setBoxIds] = useState<number[]>([]);
   const [highlightedSlotIdx, setHighlightedSlotIdx] = useState<number>(0);
 
-  // Structural Pro-Rotation Framework Team Slots
+  // Team slots (6 slots + friend leader)
   const [team, setTeam] = useState<TeamSlot[]>([
     { role: 'Leader', character: null },              // Index 0: Rotation 1 Tank/Anchor
     { role: 'Rotation 1 Partner', character: null },  // Index 1: Rotation 1 Bridge/Dps
@@ -85,7 +83,7 @@ export const TeamBuilder: React.FC = () => {
     { role: 'Friend', character: null },              // Index 6: Friend Leader (Floater/Flex)
   ]);
 
-  // Modal selectors, filters and viewer states
+  // Modal selector and viewer states
   const [activeSlotIdx, setActiveSlotIdx] = useState<number | null>(null);
   const [viewingProfileChar, setViewingProfileChar] = useState<Character | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -116,6 +114,7 @@ export const TeamBuilder: React.FC = () => {
     fetchData();
   }, [user]);
 
+  // Lock background scroll when character selection modal or profile viewer is open
   useEffect(() => {
     if (activeSlotIdx !== null || viewingProfileChar !== null) {
       document.body.style.overflow = 'hidden';
@@ -127,6 +126,7 @@ export const TeamBuilder: React.FC = () => {
     };
   }, [activeSlotIdx, viewingProfileChar]);
 
+  // Helper mapping to translate character evaluations into unified styling tags
   const getTierBadgeStyle = (tier: string) => {
     const tierStyles: Record<string, string> = {
       'Z+': 'text-red-400 bg-red-500/10 border-red-500/20',
@@ -138,11 +138,13 @@ export const TeamBuilder: React.FC = () => {
     return tierStyles[tier] || tierStyles['F'];
   };
 
+  // Helper: map character tier string to an internal weight coefficient for database sorting matrix
   const getTierWeight = (tier: string): number => {
     const weights: Record<string, number> = { 'Z+': 5, 'S': 4, 'A': 3, 'B': 2, 'F': 1 };
     return weights[tier] || 1;
   };
 
+  // Helper: check if a character matches a leader skill
   const evaluateLeaderSkill = (leader: Character, target: Character): { matched: boolean; pct: number } => {
     if (leader.id === target.id) return { matched: true, pct: 170 };
     
@@ -220,6 +222,7 @@ export const TeamBuilder: React.FC = () => {
     );
   };
 
+  // Context-Sensitive Linking Partner Calculator matching Dokkan.fyi algorithms perfectly
   const getSharedLinksWithTeam = (char: Character, slotIdx: number) => {
     let targetPartners: Character[] = [];
     
@@ -243,6 +246,7 @@ export const TeamBuilder: React.FC = () => {
     });
   };
 
+  // Advanced Candidate Generation Layer filtering strictly by Category Missions if toggled
   const getCandidates = () => {
     let list = onlyBox ? allCharacters.filter(c => boxIds.includes(c.id)) : allCharacters;
 
@@ -352,7 +356,7 @@ export const TeamBuilder: React.FC = () => {
     const usedNames = new Set<string>([leader.name]);
     const builtTeam: (Character | null)[] = [leader, null, null, null, null, null];
 
-    // --- STEP 1: Build Rotation 1 DPS Bridge Partner ---
+    // --- STEP 1: Build Rotation 1 DPS Partner ---
     let rot1PartnerScored = pool
       .filter(c => !usedNames.has(c.name))
       .map(c => {
