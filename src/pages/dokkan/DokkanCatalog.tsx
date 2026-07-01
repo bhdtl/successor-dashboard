@@ -70,6 +70,15 @@ interface Character {
   rainbow_atk: number | null;
   rainbow_def: number | null;
   tag: string;
+  // Added typing support to cleanly map the incoming AI payload from Supabase
+  meta_evaluation?: {
+    tier: string;
+    viability: string;
+    slot: string;
+    verdict: string;
+    pros: string[];
+    cons: string[];
+  } | null;
 }
 
 export const DokkanCatalog: React.FC = () => {
@@ -93,110 +102,6 @@ export const DokkanCatalog: React.FC = () => {
   const [statTab, setStatTab] = useState<'base' | 'max' | 'rainbow'>('max');
 
   const pageSize = 48;
-
-  // Striktes 2026 Meta-Evaluationssystem (1D bis 4D Analyse nach ToonRami-Kriterien)
-  const getStrictCatalogMetaEvaluation = (char: Character) => {
-    const defense = char.max_def || 0;
-    const attack = char.max_atk || 0;
-    const skillText = (char.leader_skill || '').toLowerCase();
-    const passiveText = (char.passive_skill_description || '').toLowerCase();
-    const activeText = (char.active_skill_effect || '').toLowerCase();
-    
-    // DEF gewichtet weitaus höher in der modernen Meta (Schadensreduktion & Guard ist Pflicht)
-    let score = (defense * 1.8) + (attack * 0.4);
-    
-    // 3D Dimension: Leader Skill Wertung
-    if (skillText.includes('200%')) {
-      score += 30000;
-    } else if (skillText.includes('170%')) {
-      score += 10000;
-    } else {
-      score -= 25000; // Drastischer Punkteabzug für veraltete Anführer-Fähigkeiten
-    }
-    
-    // 4D Dimension: Intangibles & Utility (Dodge, DR, Guard, Support)
-    let capabilities = 0;
-    const pros: string[] = [];
-    const cons: string[] = [];
-    
-    if (passiveText.includes('damage reduction') || passiveText.includes('reduces damage')) {
-      score += 15000;
-      capabilities++;
-      pros.push('High Native Damage Reduction');
-    }
-    if (passiveText.includes('guard')) {
-      score += 12000;
-      capabilities++;
-      pros.push('Guaranteed / Conditional Guard');
-    }
-    if (passiveText.includes('evade') || passiveText.includes('dodge')) {
-      score += 10000;
-      capabilities++;
-      pros.push('Great Evasion / Dodge Rates');
-    }
-    if (passiveText.includes('counter') || activeText.includes('counter')) {
-      score += 8000;
-      capabilities++;
-      pros.push('Counter-Attack Mechanics');
-    }
-    if (passiveText.includes('support') || passiveText.includes('all allies')) {
-      score += 10000;
-      capabilities++;
-      pros.push('Rotation Support / Stat Buffer');
-    }
-    
-    // Strikter Rarity Filter: Normale URs werden massiv abgestuft, damit keine Füller-Karten oben landen
-    if (char.rarity <= 4) {
-      score -= 22000;
-    } else {
-      pros.push('Premium LR Base Stats');
-    }
-    
-    // Slot-Empfehlung ermitteln basierend auf der defensiven Präsenz
-    let slot: 'Slot 1' | 'Slot 2' | 'Floater' = 'Floater';
-    if (passiveText.includes('guard') || passiveText.includes('damage reduction')) {
-      slot = 'Slot 1';
-    } else if (capabilities >= 2 && defense > 10000) {
-      slot = 'Slot 2';
-    } else {
-      slot = 'Floater';
-    }
-    
-    // Unnachgiebige Tierschwellen festlegen
-    let tier: 'Z+' | 'S' | 'A' | 'B' | 'F' = 'F';
-    let viability = 'Outclassed';
-    let verdict = '';
-    
-    if (score > 55000) {
-      tier = 'Z+';
-      viability = 'Meta Supreme God';
-      verdict = `${char.name} ist eine absolute Ausnahmeeinheit der 2026er Meta. Sie erfüllt alle 4 Dimensionen eines perfekten Charakters: Monumentale Defensive, unersetzbare Utility und ein vollwertiger 200% Leader Skill. Ein Pflicht-Anker.`;
-    } else if (score > 40000) {
-      tier = 'S';
-      viability = 'Top Tier Meta';
-      verdict = `Hervorragende High-Tier-Einheit. Bietet massive Offensiv- oder Defensivwerte und dominiert im korrekten Team-Verband, weist jedoch minimale Schwächen auf, die sie knapp hinter den Top 10 LRs platzieren.`;
-    } else if (score > 22000) {
-      tier = 'A';
-      viability = 'Viable Sub-Unit';
-      verdict = `Solide Ergänzung für moderne Teams. Kann als exzellenter Link-Partner fungieren, besitzt jedoch im harten Endgame-Content spürbare Überlebensrisiken (Flight Risk), wenn keine defensiven Items genutzt werden.`;
-    } else if (score > 5000) {
-      tier = 'B';
-      viability = 'Niche Choice';
-      verdict = `Sehr spezifische Nischen- oder Füllerkarte. Durch veraltete Multiplikatoren oder zu restriktive Bedingungen auf modernen Bühnen nur extrem selten profitabel einsetzbar.`;
-    } else {
-      tier = 'F';
-      viability = 'Powercrept / Fodder';
-      verdict = `Gnadenlos aus der aktuellen Meta verdrängt. Ohne nennenswerte Schadensreduktion, ohne Guard und ohne zeitgemäße Statuswerte im aktuellen Schwierigkeitsgrad unspielbar.`;
-    }
-    
-    if (pros.length === 0) pros.push('Basic Damage Application');
-    if (char.rarity <= 4) cons.push('Veraltete UR Stat Constraints');
-    if (!skillText.includes('200%')) cons.push('Kein zeitgemäßer 200% Leader Skill');
-    if (!passiveText.includes('guard') && !passiveText.includes('damage reduction')) cons.push('Kein nativer Guard/Schadensreduktion');
-    if (cons.length === 0) cons.push('Hohe Team-Abhängigkeit');
-    
-    return { tier, viability, slot, verdict, pros, cons };
-  };
 
   // Fetch characters and box items on mount and filters change
   useEffect(() => {
@@ -345,7 +250,7 @@ export const DokkanCatalog: React.FC = () => {
           .eq('card_id', charId);
 
         if (error) throw error;
-        boxIds && setBoxIds(prev => prev.filter(id => id !== charId));
+        setBoxIds(prev => prev.filter(id => id !== charId));
       } else {
         const { error } = await supabase
           .from('dokkan_user_box')
@@ -358,7 +263,7 @@ export const DokkanCatalog: React.FC = () => {
           });
 
         if (error) throw error;
-        boxIds && setBoxIds(prev => [...prev, charId]);
+        setBoxIds(prev => [...prev, charId]);
       }
     } catch (err) {
       console.error('Error modifying box:', err);
@@ -514,9 +419,15 @@ export const DokkanCatalog: React.FC = () => {
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-5">
         {characters.map((char) => {
           const inBox = boxIds.includes(char.id);
-          const evalInfo = getStrictCatalogMetaEvaluation(char);
           
-          const tierStyles = {
+          // CRITICAL FEAT: Pulled directly from the live openrouter json database payload now
+          const evalInfo = char.meta_evaluation || {
+            tier: 'F',
+            viability: 'Pending Evaluation',
+            slot: 'Floater'
+          };
+          
+          const tierStyles: Record<string, string> = {
             'Z+': 'text-red-400 bg-red-500/10 border-red-500/20',
             'S': 'text-amber-400 bg-amber-400/10 border-amber-400/20',
             'A': 'text-purple-400 bg-purple-400/10 border-purple-400/20',
@@ -567,7 +478,7 @@ export const DokkanCatalog: React.FC = () => {
                 <h4 className="font-extrabold text-sm text-white truncate max-w-full leading-tight">{char.name}</h4>
                 
                 {/* Strict Meta Tier Inline Badge */}
-                <p className={`text-[8px] font-black tracking-wide border rounded px-1.5 py-0.2 mx-auto w-max leading-none mt-1.5 ${tierStyles[evalInfo.tier]}`}>
+                <p className={`text-[8px] font-black tracking-wide border rounded px-1.5 py-0.2 mx-auto w-max leading-none mt-1.5 ${tierStyles[evalInfo.tier] || tierStyles['F']}`}>
                   {evalInfo.tier} Tier
                 </p>
               </div>
@@ -685,11 +596,18 @@ export const DokkanCatalog: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Overhauled Meta Evaluation Panel */}
+                {/* Overhauled Meta Evaluation Panel reading directly from your pipeline parameters */}
                 {(() => {
-                  const evalResult = getStrictCatalogMetaEvaluation(selectedChar);
+                  const evalResult = selectedChar.meta_evaluation || {
+                    tier: 'F',
+                    viability: 'Pending Evaluation',
+                    slot: 'Floater',
+                    verdict: 'This character profile has not been indexed by the active GitHub Action pipeline engine yet. Trigger your OpenRouter workflow sequence to update.',
+                    pros: ['Awaiting sync sequence'],
+                    cons: ['Missing execution payload']
+                  };
                   
-                  const tierColors = {
+                  const tierColors: Record<string, string> = {
                     'Z+': 'from-red-500 to-rose-600 text-white shadow-red-500/20',
                     'S': 'from-amber-400 to-amber-500 text-black shadow-amber-500/20',
                     'A': 'from-purple-500 to-indigo-500 text-white shadow-purple-500/20',
@@ -702,7 +620,7 @@ export const DokkanCatalog: React.FC = () => {
                       <div className="flex flex-wrap gap-4 items-center justify-between">
                         <div className="flex items-center gap-3">
                           {/* Glowy Strict Tier Circle */}
-                          <div className={`w-14 h-14 rounded-full bg-gradient-to-r ${tierColors[evalResult.tier]} flex items-center justify-center font-black text-2xl tracking-tighter shadow-lg shrink-0`}>
+                          <div className={`w-14 h-14 rounded-full bg-gradient-to-r ${tierColors[evalResult.tier] || tierColors['F']} flex items-center justify-center font-black text-2xl tracking-tighter shadow-lg shrink-0`}>
                             {evalResult.tier}
                           </div>
                           <div>
