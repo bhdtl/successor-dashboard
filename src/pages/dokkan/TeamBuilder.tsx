@@ -16,13 +16,18 @@ import {
   TrendingUp,
   AlertTriangle,
   Info,
-  Shield,
-  Flame,
-  Award,
   ThumbsUp,
   ThumbsDown
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+
+export const RARITY_MAP: Record<number, string> = {
+  1: 'N',
+  2: 'R',
+  3: 'SSR',
+  4: 'UR',
+  5: 'LR',
+};
 
 interface Character {
   id: number;
@@ -518,33 +523,6 @@ export const TeamBuilder: React.FC = () => {
                         element={char.element}
                         size="md"
                       />
-                      
-                      {/* Action Overlays for filled slots */}
-                      <div className="absolute inset-0 bg-black/60 rounded-xl flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                        <button
-                          type="button"
-                          title="View Profile"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setViewingProfileChar(char);
-                          }}
-                          className="bg-blue-600 hover:bg-blue-500 text-white p-1.5 rounded-lg shadow-md transition-all active:scale-90"
-                        >
-                          <Info className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          type="button"
-                          title="Change Character"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setActiveSlotIdx(idx);
-                          }}
-                          className="bg-indigo-600 hover:bg-indigo-500 text-white p-1.5 rounded-lg shadow-md transition-all active:scale-90"
-                        >
-                          <Search className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
@@ -567,7 +545,7 @@ export const TeamBuilder: React.FC = () => {
                       <p className="text-[10px] font-extrabold text-white truncate px-1 leading-tight">{char.name}</p>
                       
                       {evalInfo.tier && (
-                        <p className={`text-[8px] font-black tracking-wide border rounded px-1.5 py-0.2 mx-auto w-max leading-none my-0.5 ${getTierBadgeStyle(evalInfo.tier)}`}>
+                        <p className={`text-[8px] font-black tracking-wide border rounded px-1 py-0.2 mx-auto w-max leading-none my-0.5 ${getTierBadgeStyle(evalInfo.tier)}`}>
                           {evalInfo.tier} Tier
                         </p>
                       )}
@@ -1012,7 +990,7 @@ export const TeamBuilder: React.FC = () => {
                   )}
                 </div>
 
-                {/* Full Descriptions Details */}
+                {/* Skill Explanations */}
                 <div className="space-y-4">
                   {viewingProfileChar.leader_skill && (
                     <div className="space-y-1.5">
