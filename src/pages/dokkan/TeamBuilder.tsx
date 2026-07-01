@@ -83,7 +83,7 @@ export const TeamBuilder: React.FC = () => {
     { role: 'Friend Leader', character: null },              // Index 6
   ]);
 
-  // Modal and filtration state pipeline
+  // Modal selector and viewer states
   const [activeSlotIdx, setActiveSlotIdx] = useState<number | null>(null);
   const [viewingProfileChar, setViewingProfileChar] = useState<Character | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -259,7 +259,6 @@ export const TeamBuilder: React.FC = () => {
 
     if (activeSlotIdx !== null) {
       const leader = team[0].character || team[1].character || team[4].character;
-      const friend = team[6].character;
 
       let rotationPartner: Character | null = null;
       if (activeSlotIdx === 0) rotationPartner = team[1].character;
