@@ -62,7 +62,7 @@ interface Character {
 }
 
 interface TeamSlot {
-  role: 'Leader' | 'Rotation 1 Partner' | 'Rotation 2 Anchor' | 'Rotation 2 Partner' | 'Floater 1' | 'Floater 2' | 'Friend';
+  role: 'Rotation 1 - Slot 1 (Tank)' | 'Rotation 1 - Slot 2 (DPS)' | 'Rotation 2 - Slot 1 (Tank)' | 'Rotation 2 - Slot 2 (DPS)' | 'Floater (Slot 3)' | 'Floater 2 (Slot 3)' | 'Friend Leader';
   character: Character | null;
 }
 
@@ -72,18 +72,18 @@ export const TeamBuilder: React.FC = () => {
   const [boxIds, setBoxIds] = useState<number[]>([]);
   const [highlightedSlotIdx, setHighlightedSlotIdx] = useState<number>(0);
 
-  // Team slots (6 slots + friend leader)
+  // Hardcore Pro-Rotation Slot Layout
   const [team, setTeam] = useState<TeamSlot[]>([
-    { role: 'Leader', character: null },              // Index 0: Rotation 1 Tank/Anchor
-    { role: 'Rotation 1 Partner', character: null },  // Index 1: Rotation 1 Bridge/Dps
-    { role: 'Rotation 2 Anchor', character: null },   // Index 2: Rotation 2 Tank/Anchor
-    { role: 'Rotation 2 Partner', character: null },  // Index 3: Rotation 2 Bridge/Dps
-    { role: 'Floater 1', character: null },           // Index 4: Float Support/Utility
-    { role: 'Floater 2', character: null },           // Index 5: Float Support/Utility
-    { role: 'Friend', character: null },              // Index 6: Friend Leader (Floater/Flex)
+    { role: 'Rotation 1 - Slot 1 (Tank)', character: null }, // Index 0
+    { role: 'Rotation 1 - Slot 2 (DPS)', character: null },  // Index 1
+    { role: 'Rotation 2 - Slot 1 (Tank)', character: null }, // Index 2
+    { role: 'Rotation 2 - Slot 2 (DPS)', character: null },  // Index 3
+    { role: 'Floater (Slot 3)', character: null },           // Index 4
+    { role: 'Floater 2 (Slot 3)', character: null },         // Index 5
+    { role: 'Friend Leader', character: null },              // Index 6
   ]);
 
-  // Modal selector and viewer states
+  // Modal and filtration pipeline states
   const [activeSlotIdx, setActiveSlotIdx] = useState<number | null>(null);
   const [viewingProfileChar, setViewingProfileChar] = useState<Character | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -114,7 +114,6 @@ export const TeamBuilder: React.FC = () => {
     fetchData();
   }, [user]);
 
-  // Lock background scroll when character selection modal or profile viewer is open
   useEffect(() => {
     if (activeSlotIdx !== null || viewingProfileChar !== null) {
       document.body.style.overflow = 'hidden';
@@ -126,7 +125,6 @@ export const TeamBuilder: React.FC = () => {
     };
   }, [activeSlotIdx, viewingProfileChar]);
 
-  // Helper mapping to translate character evaluations into unified styling tags
   const getTierBadgeStyle = (tier: string) => {
     const tierStyles: Record<string, string> = {
       'Z+': 'text-red-400 bg-red-500/10 border-red-500/20',
@@ -138,13 +136,11 @@ export const TeamBuilder: React.FC = () => {
     return tierStyles[tier] || tierStyles['F'];
   };
 
-  // Helper: map character tier string to an internal weight coefficient for database sorting matrix
   const getTierWeight = (tier: string): number => {
     const weights: Record<string, number> = { 'Z+': 5, 'S': 4, 'A': 3, 'B': 2, 'F': 1 };
     return weights[tier] || 1;
   };
 
-  // Helper: check if a character matches a leader skill
   const evaluateLeaderSkill = (leader: Character, target: Character): { matched: boolean; pct: number } => {
     if (leader.id === target.id) return { matched: true, pct: 170 };
     
@@ -222,7 +218,7 @@ export const TeamBuilder: React.FC = () => {
     );
   };
 
-  // Context-Sensitive Linking Partner Calculator matching Dokkan.fyi algorithms perfectly
+  // Localized Cross-Link Evaluation Context Engine
   const getSharedLinksWithTeam = (char: Character, slotIdx: number) => {
     let targetPartners: Character[] = [];
     
@@ -246,7 +242,6 @@ export const TeamBuilder: React.FC = () => {
     });
   };
 
-  // Advanced Candidate Generation Layer filtering strictly by Category Missions if toggled
   const getCandidates = () => {
     let list = onlyBox ? allCharacters.filter(c => boxIds.includes(c.id)) : allCharacters;
 
@@ -263,8 +258,7 @@ export const TeamBuilder: React.FC = () => {
     }
 
     if (activeSlotIdx !== null) {
-      const leader = team[0].character;
-      const friend = team[6].character;
+      const leader = team[0].character || team[6].character;
 
       let rotationPartner: Character | null = null;
       if (activeSlotIdx === 0) rotationPartner = team[1].character;
@@ -272,36 +266,37 @@ export const TeamBuilder: React.FC = () => {
       else if (activeSlotIdx === 2) rotationPartner = team[3].character;
       else if (activeSlotIdx === 3) rotationPartner = team[2].character;
 
-      const scoredList = list.map(c => {
-        let sharedLinksCount = 0;
-        if (rotationPartner) {
-          sharedLinksCount = (c.link_ids || []).filter(lid => rotationPartner?.link_ids?.includes(lid)).length;
-        } else {
-          const otherMembers = team.filter((s, idx) => s.character && idx !== activeSlotIdx).map(s => s.character) as Character[];
-          sharedLinksCount = otherMembers.length > 0 ? (c.link_ids || []).filter(lid => otherMembers.some(m => m.link_ids?.includes(lid))).length : 0;
-        }
+      const scoredList = list
+        .map(c => {
+          const lBoost = leader ? evaluateLeaderSkill(leader, c).pct : 0;
+          
+          let sharedLinksCount = 0;
+          if (rotationPartner) {
+            sharedLinksCount = (c.link_ids || []).filter(lid => rotationPartner?.link_ids?.includes(lid)).length;
+          } else {
+            const otherMembers = team.filter((s, idx) => s.character && idx !== activeSlotIdx).map(s => s.character) as Character[];
+            sharedLinksCount = otherMembers.length > 0 ? (c.link_ids || []).filter(lid => otherMembers.some(m => m.link_ids?.includes(lid))).length : 0;
+          }
 
-        const lBoost = leader ? evaluateLeaderSkill(leader, c).pct : 0;
-        const fBoost = friend ? evaluateLeaderSkill(friend, c).pct : 0;
-        const totalBoost = lBoost + fBoost;
-        
-        const aiEval = c.meta_evaluation || { tier: 'F' };
-        const aiWeight = getTierWeight(aiEval.tier);
+          const aiEval = c.meta_evaluation || { tier: 'F' };
+          const aiWeight = getTierWeight(aiEval.tier);
 
-        return {
-          char: c,
-          sharedLinksCount,
-          totalBoost,
-          aiWeight,
-          sameName: hasSameNameWarning(c, activeSlotIdx)
-        };
-      });
+          return {
+            char: c,
+            sharedLinksCount,
+            lBoost,
+            aiWeight,
+            sameName: hasSameNameWarning(c, activeSlotIdx)
+          };
+        })
+        // CRITICAL PRO DIRECTIVE: Disqualify or penalize units failing leader skill coverage instantly
+        .filter(item => activeSlotIdx === 0 || leader === null || item.lBoost > 0);
 
       scoredList.sort((a, b) => {
         if (a.sameName !== b.sameName) return a.sameName ? 1 : -1;
+        if (b.lBoost !== a.lBoost) return b.lBoost - a.lBoost; // Max leader skill boost takes high priority
         if (a.sharedLinksCount !== b.sharedLinksCount) return b.sharedLinksCount - a.sharedLinksCount;
-        if (a.aiWeight !== b.aiWeight) return b.aiWeight - a.aiWeight;
-        return b.totalBoost - a.totalBoost;
+        return b.aiWeight - a.aiWeight;
       });
 
       return scoredList.map(item => item.char).slice(0, 30);
@@ -312,6 +307,7 @@ export const TeamBuilder: React.FC = () => {
 
   const getLinkingPartnerRecommendations = (char: Character, limit = 5) => {
     let list = onlyBox ? allCharacters.filter(c => boxIds.includes(c.id)) : allCharacters;
+    const leader = team[0].character;
     
     if (selectedEventCategory !== null) {
       list = list.filter(c => c.category_ids?.includes(selectedEventCategory));
@@ -320,123 +316,161 @@ export const TeamBuilder: React.FC = () => {
     const scored = list
       .filter(c => c.id !== char.id && c.name !== char.name)
       .map(c => {
+        const boost = leader ? evaluateLeaderSkill(leader, c).pct : 170;
         const shared = (c.link_ids || []).filter(lid => char.link_ids?.includes(lid));
         const aiEval = c.meta_evaluation || { tier: 'F' };
         return {
           char: c,
+          boost,
           sharedLinks: shared.map(lid => linksData.find(l => l.id === lid)?.name || `Link ${lid}`),
           aiWeight: getTierWeight(aiEval.tier)
         };
       })
+      .filter(item => item.boost > 0) // Pro-filter: Drop 0% leader units
       .sort((a, b) => {
         if (a.sharedLinks.length !== b.sharedLinks.length) {
           return b.sharedLinks.length - a.sharedLinks.length;
         }
+        if (b.boost !== a.boost) return b.boost - a.boost;
         return b.aiWeight - a.aiWeight;
       });
 
     return scored.slice(0, limit);
   };
 
+  // High-Tier Dokkan Pro Multi-Rotation Assembly Algorithm
   const handleAutobuild = () => {
-    const leader = team[0].character;
-    if (!leader) return;
+    const primaryInputLeader = team[0].character;
+    if (!primaryInputLeader) return;
 
-    let pool = allCharacters.filter(c => boxIds.includes(c.id) && c.id !== leader.id);
+    let pool = allCharacters.filter(c => boxIds.includes(c.id) && c.id !== primaryInputLeader.id);
     if (selectedEventCategory !== null) {
       pool = pool.filter(c => c.category_ids?.includes(selectedEventCategory));
     }
 
+    // Hard compliance screening: Filter pool to only contain units receiving >0% leader boost parameters
+    pool = pool.filter(c => evaluateLeaderSkill(primaryInputLeader, c).pct > 0);
+
     if (pool.length === 0) {
-      alert("No matching characters in your box match the active category filter layers!");
+      alert("No valid units in your box qualify under this leader skill and active mission filter layer combination!");
       return;
     }
 
-    const usedIds = new Set<number>([leader.id]);
-    const usedNames = new Set<string>([leader.name]);
-    const builtTeam: (Character | null)[] = [leader, null, null, null, null, null];
+    const usedIds = new Set<number>([primaryInputLeader.id]);
+    const usedNames = new Set<string>([primaryInputLeader.name]);
+    const builtTeam: (Character | null)[] = [null, null, null, null, null, null];
 
-    // --- STEP 1: Build Rotation 1 DPS Partner ---
-    let rot1PartnerScored = pool
-      .filter(c => !usedNames.has(c.name))
-      .map(c => {
-        const boost = evaluateLeaderSkill(leader, c).pct;
-        const linksCount = (c.link_ids || []).filter(lid => leader.link_ids?.includes(lid)).length;
-        const aiWeight = getTierWeight(c.meta_evaluation?.tier || 'F');
-        return { char: c, score: (linksCount * 250) + (boost * 15) + (aiWeight * 40) };
-      }).sort((a, b) => b.score - a.score);
+    const leaderSlotRole = primaryInputLeader.meta_evaluation?.slot || 'Slot 1';
 
-    if (rot1PartnerScored.length > 0) {
-      const choice = rot1PartnerScored[0].char;
-      builtTeam[1] = choice;
-      usedIds.add(choice.id);
-      usedNames.add(choice.name);
+    // --- STRATEGIC PHASE 1: DYNAMIC LEADER ALLOCATION ---
+    if (leaderSlotRole === 'Slot 1') {
+      builtTeam[0] = primaryInputLeader; // Set as Rotation 1 Main Tank Anchor
+    } else if (leaderSlotRole === 'Slot 2') {
+      builtTeam[1] = primaryInputLeader; // Set as Rotation 1 DPS Bridge
+    } else {
+      builtTeam[4] = primaryInputLeader; // Set as Floater 1
     }
 
-    // --- STEP 2: Build Rotation 2 Primary Tank ---
-    let rot2AnchorScored = pool
-      .filter(c => !usedNames.has(c.name) && !usedIds.has(c.id))
-      .map(c => {
-        const boost = evaluateLeaderSkill(leader, c).pct;
-        const aiEval = c.meta_evaluation || { tier: 'F', slot: 'Slot 2' };
-        const isSlot1Tank = aiEval.slot === 'Slot 1' ? 400 : 0;
-        const aiWeight = getTierWeight(aiEval.tier);
-        return { char: c, score: isSlot1Tank + (aiWeight * 150) + (boost * 10) };
-      }).sort((a, b) => b.score - a.score);
-
-    if (rot2AnchorScored.length > 0) {
-      const choice = rot2AnchorScored[0].char;
-      builtTeam[2] = choice;
-      usedIds.add(choice.id);
-      usedNames.add(choice.name);
-    }
-
-    // --- STEP 3: Build Rotation 2 Partner ---
-    const r2Anchor = builtTeam[2];
-    if (r2Anchor) {
-      let rot2PartnerScored = pool
-        .filter(c => !usedNames.has(c.name) && !usedIds.has(c.id))
+    // --- STRATEGIC PHASE 2: ROTATION 1 COMPLETION ---
+    if (builtTeam[0] && !builtTeam[1]) {
+      // Find matching bridge partner for leader tank
+      let bestBridge = pool
+        .filter(c => !usedNames.has(c.name))
         .map(c => {
-          const boost = evaluateLeaderSkill(leader, c).pct;
-          const linksCount = (c.link_ids || []).filter(lid => r2Anchor.link_ids?.includes(lid)).length;
-          const aiWeight = getTierWeight(c.meta_evaluation?.tier || 'F');
-          return { char: c, score: (linksCount * 250) + (boost * 15) + (aiWeight * 40) };
-        }).sort((a, b) => b.score - a.score);
-
-      if (rot2PartnerScored.length > 0) {
-        const choice = rot2PartnerScored[0].char;
-        builtTeam[3] = choice;
-        usedIds.add(choice.id);
-        usedNames.add(choice.name);
+          const boost = evaluateLeaderSkill(primaryInputLeader, c).pct;
+          const links = (c.link_ids || []).filter(l => builtTeam[0]?.link_ids?.includes(l)).length;
+          const weight = getTierWeight(c.meta_evaluation?.tier || 'F');
+          return { char: c, score: (links * 300) + (boost * 20) + (weight * 30) };
+        }).sort((a, b) => b.score - a.score)[0];
+      if (bestBridge) {
+        builtTeam[1] = bestBridge.char; usedIds.add(bestBridge.char.id); usedNames.add(bestBridge.char.name);
+      }
+    } else if (builtTeam[1] && !builtTeam[0]) {
+      // Find matching main tank anchor for leader bridge
+      let bestTank = pool
+        .filter(c => !usedNames.has(c.name) && c.meta_evaluation?.slot === 'Slot 1')
+        .map(c => {
+          const boost = evaluateLeaderSkill(primaryInputLeader, c).pct;
+          const links = (c.link_ids || []).filter(l => builtTeam[1]?.link_ids?.includes(l)).length;
+          const weight = getTierWeight(c.meta_evaluation?.tier || 'F');
+          return { char: c, score: (links * 200) + (boost * 20) + (weight * 100) };
+        }).sort((a, b) => b.score - a.score)[0];
+      if (bestTank) {
+        builtTeam[0] = bestTank.char; usedIds.add(bestTank.char.id); usedNames.add(bestTank.char.name);
+      }
+    } else if (!builtTeam[0] && !builtTeam[1]) {
+      // Leader is a floater, completely build Rotation 1 from scratch
+      let bestTank = pool
+        .filter(c => c.meta_evaluation?.slot === 'Slot 1')
+        .sort((a, b) => getTierWeight(b.meta_evaluation?.tier || 'F') - getTierWeight(a.meta_evaluation?.tier || 'F'))[0];
+      if (bestTank) {
+        builtTeam[0] = bestTank; usedIds.add(bestTank.id); usedNames.add(bestTank.name);
+        let bestBridge = pool
+          .filter(c => !usedNames.has(c.name) && !usedIds.has(c.id))
+          .map(c => {
+            const boost = evaluateLeaderSkill(primaryInputLeader, c).pct;
+            const links = (c.link_ids || []).filter(l => bestTank.link_ids?.includes(l)).length;
+            return { char: c, score: (links * 300) + (boost * 20) };
+          }).sort((a, b) => b.score - a.score)[0];
+        if (bestBridge) {
+          builtTeam[1] = bestBridge.char; usedIds.add(bestBridge.char.id); usedNames.add(bestBridge.char.name);
+        }
       }
     }
 
-    // --- STEP 4: Fill Floater Slots ---
-    for (let fIdx = 4; fIdx <= 5; fIdx++) {
-      let floaterScored = pool
+    // --- STRATEGIC PHASE 3: ROTATION 2 COMPLETION ---
+    let r2Tank = pool
+      .filter(c => !usedNames.has(c.name) && !usedIds.has(c.id) && c.meta_evaluation?.slot === 'Slot 1')
+      .map(c => {
+        const boost = evaluateLeaderSkill(primaryInputLeader, c).pct;
+        const weight = getTierWeight(c.meta_evaluation?.tier || 'F');
+        return { char: c, score: (weight * 300) + (boost * 20) };
+      }).sort((a, b) => b.score - a.score)[0]?.char;
+
+    // Fallback if no explicit slot 1 tank remains unassigned
+    if (!r2Tank) {
+      r2Tank = pool
+        .filter(c => !usedNames.has(c.name) && !usedIds.has(c.id))
+        .sort((a, b) => getTierWeight(b.meta_evaluation?.tier || 'F') - getTierWeight(a.meta_evaluation?.tier || 'F'))[0];
+    }
+
+    if (r2Tank) {
+      builtTeam[2] = r2Tank; usedIds.add(r2Tank.id); usedNames.add(r2Tank.name);
+      let r2Bridge = pool
         .filter(c => !usedNames.has(c.name) && !usedIds.has(c.id))
         .map(c => {
-          const boost = evaluateLeaderSkill(leader, c).pct;
-          const aiEval = c.meta_evaluation || { tier: 'F', slot: 'Floater' };
-          const isFloaterBadge = aiEval.slot === 'Floater' ? 100 : 0;
-          const aiWeight = getTierWeight(aiEval.tier);
-          return { char: c, score: isFloaterBadge + (aiWeight * 120) + (boost * 15) };
-        }).sort((a, b) => b.score - a.score);
-
-      if (floaterScored.length > 0) {
-        const choice = floaterScored[0].char;
-        builtTeam[fIdx] = choice;
-        usedIds.add(choice.id);
-        usedNames.add(choice.name);
+          const boost = evaluateLeaderSkill(primaryInputLeader, c).pct;
+          const links = (c.link_ids || []).filter(l => r2Tank?.link_ids?.includes(l)).length;
+          return { char: c, score: (links * 400) + (boost * 15) };
+        }).sort((a, b) => b.score - a.score)[0]?.char;
+      if (r2Bridge) {
+        builtTeam[3] = r2Bridge; usedIds.add(r2Bridge.id); usedNames.add(r2Bridge.name);
       }
     }
 
+    // --- STRATEGIC PHASE 4: FLOATER PIPELINE ASSEMBLY ---
+    for (let i = 4; i <= 5; i++) {
+      if (builtTeam[i]) continue; // Skip if leader filled slot 4 already
+      let bestFloater = pool
+        .filter(c => !usedNames.has(c.name) && !usedIds.has(c.id))
+        .map(c => {
+          const boost = evaluateLeaderSkill(primaryInputLeader, c).pct;
+          const isFloaterRoleBadge = c.meta_evaluation?.slot === 'Floater' ? 150 : 0;
+          const weight = getTierWeight(c.meta_evaluation?.tier || 'F');
+          return { char: c, score: isFloaterRoleBadge + (weight * 100) + (boost * 10) };
+        }).sort((a, b) => b.score - a.score)[0]?.char;
+      if (bestFloater) {
+        builtTeam[i] = bestFloater; usedIds.add(bestFloater.id); usedNames.add(bestFloater.name);
+      }
+    }
+
+    // Save configuration directly to structural state mapping layout cleanly
     setTeam(prev => {
       const copy = [...prev];
       for (let i = 0; i <= 5; i++) {
         copy[i] = { ...copy[i], character: builtTeam[i] };
       }
-      copy[6] = { ...copy[6], character: leader };
+      copy[6] = { ...copy[6], character: primaryInputLeader };
       return copy;
     });
 
@@ -444,7 +478,7 @@ export const TeamBuilder: React.FC = () => {
   };
 
   const computeTeamAnalysis = () => {
-    const leader = team[0].character;
+    const leader = team[0].character || team[1].character || team[4].character;
     const friend = team[6].character;
     const members = team.filter(slot => slot.character !== null).map(slot => slot.character) as Character[];
 
@@ -487,6 +521,16 @@ export const TeamBuilder: React.FC = () => {
     return { boosts, activeLinks, sharedCategories };
   };
 
+  const getCategoryName = (id: number) => {
+    const cat = categoriesData.find((c: any) => c.id === id);
+    return cat ? cat.name : `Category ${id}`;
+  };
+
+  const getLinkName = (id: number) => {
+    const lk = linksData.find((l: any) => l.id === id);
+    return lk ? lk.name : `Link ${id}`;
+  };
+
   const analysis = computeTeamAnalysis();
   const highlightedChar = team[highlightedSlotIdx]?.character;
 
@@ -525,7 +569,7 @@ export const TeamBuilder: React.FC = () => {
             </span>
           </div>
 
-          {team[0].character && (
+          {(team[0].character || team[1].character || team[4].character) && (
             <button
               onClick={handleAutobuild}
               className="flex items-center gap-2 px-5 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-blue-500/20 active:scale-95 transition-all"
@@ -554,37 +598,82 @@ export const TeamBuilder: React.FC = () => {
                 return (
                   <div
                     key={idx}
-                    onClick={() => { setHighlightedSlotIdx(idx); if (!char) setActiveSlotIdx(idx); }}
-                    className={`bg-[#161F30]/80 border rounded-2xl p-5 flex items-center gap-5 transition-all cursor-pointer relative group ${
-                      highlightedSlotIdx === idx ? 'border-blue-500 bg-[#161F30]' : 'border-[#23324C] hover:border-blue-500/40'
+                    onClick={() => {
+                      setHighlightedSlotIdx(idx);
+                      if (!char) {
+                        setActiveSlotIdx(idx);
+                      }
+                    }}
+                    className={`bg-[#161F30]/80 border rounded-2xl p-4 flex flex-col items-center justify-between min-h-[260px] transition-all cursor-pointer relative group ${
+                      highlightedSlotIdx === idx ? 'border-blue-500 ring-1 ring-blue-500/20 bg-[#161F30]' : 'border-[#23324C]'
                     }`}
                   >
-                    <div className="relative shrink-0">
-                      {char ? (
-                        <>
-                          <DokkanCard cardId={char.id} name={char.name} rarity={char.rarity} element={char.element} size="md" />
-                          <div className="absolute inset-0 bg-black/60 rounded-xl flex items-center justify-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button type="button" onClick={(e) => { e.stopPropagation(); setViewingProfileChar(char); }} className="bg-blue-600 p-1 rounded-lg text-white"><HelpCircle className="w-3.5 h-3.5" /></button>
-                            <button type="button" onClick={(e) => { e.stopPropagation(); setActiveSlotIdx(idx); }} className="bg-indigo-600 p-1 rounded-lg text-white"><Search className="w-3.5 h-3.5" /></button>
-                          </div>
-                          <button onClick={(e) => { e.stopPropagation(); handleRemoveCharacter(idx); }} className="absolute -top-1.5 -right-1.5 bg-red-500 text-white p-1 rounded-full border border-[#0B0F19] opacity-0 group-hover:opacity-100"><X className="w-3 h-3" /></button>
-                        </>
-                      ) : (
-                        <div className="w-16 h-16 rounded-full border border-dashed border-gray-700 flex items-center justify-center text-gray-500"><Plus className="w-5 h-5" /></div>
-                      )}
-                    </div>
-                    <div className="min-w-0 flex-1 space-y-1">
-                      <span className="text-[8px] font-black uppercase text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded-md border border-blue-500/20">{slot.role}</span>
-                      <h4 className="text-sm font-bold text-white truncate mt-1">{char ? char.name : 'Empty Tactical Slot'}</h4>
-                      {char && (
-                        <div className="flex gap-1.5 flex-wrap pt-0.5">
-                          <span className={`text-[8px] font-black border rounded px-1.5 py-0.2 ${getTierBadgeStyle(char.meta_evaluation?.tier || 'F')}`}>{char.meta_evaluation?.tier || 'F'} Tier</span>
-                          <span className="text-[8px] font-bold text-emerald-400 bg-emerald-500/10 px-1.5 py-0.2 rounded">+{boostVal}% Boost</span>
-                          {activeLinksCount > 0 && <span className="text-[8px] font-bold text-indigo-400 bg-indigo-500/10 px-1.5 py-0.2 rounded">🔗 {activeLinksCount} Partner Links</span>}
+                    <span className={`text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full mb-2 bg-blue-500/20 text-blue-400 border border-blue-500/30`}>
+                      {slot.role}
+                    </span>
+
+                    {hasWarn && (
+                      <div className="absolute top-2 right-2 bg-amber-500 text-black p-1 rounded-lg z-20 shadow-md animate-pulse">
+                        <AlertTriangle className="w-3.5 h-3.5" />
+                      </div>
+                    )}
+
+                    {char ? (
+                      <div className="relative">
+                        <DokkanCard cardId={char.id} name={char.name} rarity={char.rarity} element={char.element} size="md" />
+                        
+                        <div className="absolute inset-0 bg-black/60 rounded-xl flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                          <button
+                            type="button"
+                            onClick={(e) => { e.stopPropagation(); setViewingProfileChar(char); }}
+                            className="bg-blue-600 hover:bg-blue-500 text-white p-1.5 rounded-lg shadow-md"
+                          >
+                            Profile
+                          </button>
+                          <button
+                            type="button"
+                            onClick={(e) => { e.stopPropagation(); setActiveSlotIdx(idx); }}
+                            className="bg-indigo-600 hover:bg-indigo-500 text-white p-1.5 rounded-lg shadow-md"
+                          >
+                            Swap
+                          </button>
                         </div>
-                      )}
-                    </div>
-                    {hasWarn && <div className="absolute top-3 right-3 text-amber-500"><AlertTriangle className="w-4 h-4 animate-pulse" /></div>}
+
+                        <button
+                          onClick={(e) => { e.stopPropagation(); handleRemoveCharacter(idx); }}
+                          className="absolute -top-1.5 -right-1.5 bg-red-500 text-white p-1 rounded-full z-20 opacity-0 group-hover:opacity-100"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="w-16 h-16 rounded-full border border-dashed border-gray-700 flex items-center justify-center text-gray-500">
+                        <Plus className="w-6 h-6" />
+                      </div>
+                    )}
+
+                    {char ? (
+                      <div className="text-center w-full mt-2.5 space-y-1">
+                        <p className="text-[10px] font-extrabold text-white truncate px-1">{char.name}</p>
+                        {char.meta_evaluation?.tier && (
+                          <p className={`text-[8px] font-black tracking-wide border rounded px-1.5 py-0.2 mx-auto w-max ${getTierBadgeStyle(char.meta_evaluation.tier)}`}>
+                            {char.meta_evaluation.tier} Tier
+                          </p>
+                        )}
+                        <div className="flex flex-col gap-0.5 mt-1">
+                          <span className={`text-[8px] font-black px-1.5 py-0.2 rounded mx-auto ${boostVal > 0 ? 'text-emerald-400 bg-emerald-500/10' : 'text-red-400 bg-red-500/10'}`}>
+                            {boostVal > 0 ? `+${boostVal}% Boost` : '0% Boost'}
+                          </span>
+                          {activeLinksCount > 0 && (
+                            <span className="text-[8px] font-black text-indigo-400 bg-indigo-500/10 px-1.5 py-0.2 rounded mx-auto">
+                              🔗 {activeLinksCount} Links
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    ) : (
+                      <span className="text-[11px] font-bold text-gray-500 mt-2">Empty Slot</span>
+                    )}
                   </div>
                 );
               })}
@@ -604,37 +693,63 @@ export const TeamBuilder: React.FC = () => {
                 return (
                   <div
                     key={idx}
-                    onClick={() => { setHighlightedSlotIdx(idx); if (!char) setActiveSlotIdx(idx); }}
-                    className={`bg-[#161F30]/80 border rounded-2xl p-5 flex items-center gap-5 transition-all cursor-pointer relative group ${
-                      highlightedSlotIdx === idx ? 'border-purple-500 bg-[#161F30]' : 'border-[#23324C] hover:border-purple-500/40'
+                    onClick={() => {
+                      setHighlightedSlotIdx(idx);
+                      if (!char) {
+                        setActiveSlotIdx(idx);
+                      }
+                    }}
+                    className={`bg-[#161F30]/80 border rounded-2xl p-4 flex flex-col items-center justify-between min-h-[260px] transition-all cursor-pointer relative group ${
+                      highlightedSlotIdx === idx ? 'border-blue-500 ring-1 ring-blue-500/20 bg-[#161F30]' : 'border-[#23324C]'
                     }`}
                   >
-                    <div className="relative shrink-0">
-                      {char ? (
-                        <>
-                          <DokkanCard cardId={char.id} name={char.name} rarity={char.rarity} element={char.element} size="md" />
-                          <div className="absolute inset-0 bg-black/60 rounded-xl flex items-center justify-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button type="button" onClick={(e) => { e.stopPropagation(); setViewingProfileChar(char); }} className="bg-blue-600 p-1 rounded-lg text-white"><HelpCircle className="w-3.5 h-3.5" /></button>
-                            <button type="button" onClick={(e) => { e.stopPropagation(); setActiveSlotIdx(idx); }} className="bg-indigo-600 p-1 rounded-lg text-white"><Search className="w-3.5 h-3.5" /></button>
-                          </div>
-                          <button onClick={(e) => { e.stopPropagation(); handleRemoveCharacter(idx); }} className="absolute -top-1.5 -right-1.5 bg-red-500 text-white p-1 rounded-full border border-[#0B0F19] opacity-0 group-hover:opacity-100"><X className="w-3 h-3" /></button>
-                        </>
-                      ) : (
-                        <div className="w-16 h-16 rounded-full border border-dashed border-gray-700 flex items-center justify-center text-gray-500"><Plus className="w-5 h-5" /></div>
-                      )}
-                    </div>
-                    <div className="min-w-0 flex-1 space-y-1">
-                      <span className="text-[8px] font-black uppercase text-purple-400 bg-purple-500/10 px-2 py-0.5 rounded-md border border-purple-500/20">{slot.role}</span>
-                      <h4 className="text-sm font-bold text-white truncate mt-1">{char ? char.name : 'Empty Tactical Slot'}</h4>
-                      {char && (
-                        <div className="flex gap-1.5 flex-wrap pt-0.5">
-                          <span className={`text-[8px] font-black border rounded px-1.5 py-0.2 ${getTierBadgeStyle(char.meta_evaluation?.tier || 'F')}`}>{char.meta_evaluation?.tier || 'F'} Tier</span>
-                          <span className="text-[8px] font-bold text-emerald-400 bg-emerald-500/10 px-1.5 py-0.2 rounded">+{boostVal}% Boost</span>
-                          {activeLinksCount > 0 && <span className="text-[8px] font-bold text-indigo-400 bg-indigo-500/10 px-1.5 py-0.2 rounded">🔗 {activeLinksCount} Partner Links</span>}
+                    <span className={`text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full mb-2 bg-purple-500/20 text-purple-400 border border-purple-500/30`}>
+                      {slot.role}
+                    </span>
+
+                    {hasWarn && (
+                      <div className="absolute top-2 right-2 bg-amber-500 text-black p-1 rounded-lg z-20 shadow-md animate-pulse">
+                        <AlertTriangle className="w-3.5 h-3.5" />
+                      </div>
+                    )}
+
+                    {char ? (
+                      <div className="relative">
+                        <DokkanCard cardId={char.id} name={char.name} rarity={char.rarity} element={char.element} size="md" />
+                        
+                        <div className="absolute inset-0 bg-black/60 rounded-xl flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                          <button type="button" onClick={(e) => { e.stopPropagation(); setViewingProfileChar(char); }} className="bg-blue-600 p-1 rounded-lg text-white"><HelpCircle className="w-3.5 h-3.5" /></button>
+                          <button type="button" onClick={(e) => { e.stopPropagation(); setActiveSlotIdx(idx); }} className="bg-indigo-600 p-1 rounded-lg text-white"><Search className="w-3.5 h-3.5" /></button>
                         </div>
-                      )}
-                    </div>
-                    {hasWarn && <div className="absolute top-3 right-3 text-amber-500"><AlertTriangle className="w-4 h-4 animate-pulse" /></div>}
+
+                        <button onClick={(e) => { e.stopPropagation(); handleRemoveCharacter(idx); }} className="absolute -top-1.5 -right-1.5 bg-red-500 text-white p-1 rounded-full z-20 opacity-0 group-hover:opacity-100"><X className="w-3 h-3" /></button>
+                      </div>
+                    ) : (
+                      <div className="w-16 h-16 rounded-full border border-dashed border-gray-700 flex items-center justify-center text-gray-500"><Plus className="w-4 h-4" /></div>
+                    )}
+
+                    {char ? (
+                      <div className="text-center w-full mt-2.5 space-y-1">
+                        <p className="text-[10px] font-extrabold text-white truncate px-1">{char.name}</p>
+                        {char.meta_evaluation?.tier && (
+                          <p className={`text-[8px] font-black tracking-wide border rounded px-1.5 py-0.2 mx-auto w-max ${getTierBadgeStyle(char.meta_evaluation.tier)}`}>
+                            {char.meta_evaluation.tier} Tier
+                          </p>
+                        )}
+                        <div className="flex flex-col gap-0.5 mt-1">
+                          <span className={`text-[8px] font-black px-1.5 py-0.2 rounded mx-auto ${boostVal > 0 ? 'text-emerald-400 bg-emerald-500/10' : 'text-red-400 bg-red-500/10'}`}>
+                            {boostVal > 0 ? `+${boostVal}% Boost` : '0% Boost'}
+                          </span>
+                          {activeLinksCount > 0 && (
+                            <span className="text-[8px] font-black text-indigo-400 bg-indigo-500/10 px-1.5 py-0.2 rounded mx-auto">
+                              🔗 {activeLinksCount} Links
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    ) : (
+                      <span className="text-[11px] font-bold text-gray-500 mt-2">Empty Slot</span>
+                    )}
                   </div>
                 );
               })}
@@ -655,7 +770,7 @@ export const TeamBuilder: React.FC = () => {
                     key={idx}
                     onClick={() => { setHighlightedSlotIdx(idx); if (!char) setActiveSlotIdx(idx); }}
                     className={`bg-[#161F30]/80 border rounded-2xl p-4 flex flex-col items-center justify-between text-center transition-all cursor-pointer relative group min-h-[220px] ${
-                      highlightedSlotIdx === idx ? 'border-gray-500 bg-[#161F30]' : 'border-[#23324C] hover:border-gray-500/30'
+                      highlightedSlotIdx === idx ? 'border-gray-500 bg-[#161F30]' : 'border-[#23324C]'
                     }`}
                   >
                     <span className="text-[8px] font-black uppercase text-gray-400 bg-gray-800 px-2 py-0.5 rounded-full">{slot.role}</span>
@@ -667,7 +782,7 @@ export const TeamBuilder: React.FC = () => {
                             <button type="button" onClick={(e) => { e.stopPropagation(); setViewingProfileChar(char); }} className="bg-blue-600 p-1 rounded-lg text-white"><HelpCircle className="w-3 h-3" /></button>
                             <button type="button" onClick={(e) => { e.stopPropagation(); setActiveSlotIdx(idx); }} className="bg-indigo-600 p-1 rounded-lg text-white"><Search className="w-3 h-3" /></button>
                           </div>
-                          <button onClick={(e) => { e.stopPropagation(); handleRemoveCharacter(idx); }} className="absolute -top-1 -right-1 bg-red-500 text-white p-1 rounded-full border border-[#0B0F19] opacity-0 group-hover:opacity-100"><X className="w-2.5 h-2.5" /></button>
+                          <button onClick={(e) => { e.stopPropagation(); handleRemoveCharacter(idx); }} className="absolute -top-1 -right-1 bg-red-500 text-white p-1 rounded-full border border-[#0B0F19]"><X className="w-2.5 h-2.5" /></button>
                         </>
                       ) : (
                         <div className="w-14 h-16 rounded-full border border-dashed border-gray-700 flex items-center justify-center text-gray-500"><Plus className="w-4 h-4" /></div>
@@ -802,7 +917,7 @@ export const TeamBuilder: React.FC = () => {
 
                 <div className="space-y-2 overflow-y-auto pr-1">
                   {getCandidates().map((char) => {
-                    const leader = team[0].character;
+                    const leader = team[0].character || team[1].character || team[4].character;
                     const friend = team[6].character;
                     const lBoost = leader ? evaluateLeaderSkill(leader, char).pct : 0;
                     const fBoost = friend ? evaluateLeaderSkill(friend, char).pct : 0;
