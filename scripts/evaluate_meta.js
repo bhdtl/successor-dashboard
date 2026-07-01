@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import crypto from 'crypto'; // Native Node.js cryptographic module for secure fingerprint generation
 
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_KEY;
@@ -89,11 +90,42 @@ async function evaluateCharacters() {
   const globalMedianDEF = calculateMedian(allCharacters, 'max_def');
 
   console.log(`Global Database Baselines Calculated -> Median HP: ${globalMedianHP} | Median ATK: ${globalMedianATK} | Median DEF: ${globalMedianDEF}`);
-  console.log("Beginning strict database-wide meta evaluation pipeline update...");
+  console.log("Beginning smart incremental evaluation processing sequence...");
 
   for (const char of allCharacters) {
-    console.log(`Analyzing asset: ${char.name} (${char.subname || 'No Title'}) [ID: ${char.id}]`);
     
+    // Deterministic string serialization containing all skill mechanics, stats, and identity layers
+    const dataFingerprintString = JSON.stringify({
+      name: char.name,
+      subname: char.subname,
+      rarity: char.rarity,
+      leader_skill: char.leader_skill,
+      passive_skill_name: char.passive_skill_name,
+      passive_skill_description: char.passive_skill_description,
+      active_skill_name: char.active_skill_name,
+      active_skill_effect: char.active_skill_effect,
+      active_skill_condition: char.active_skill_condition,
+      max_hp: char.max_hp,
+      max_atk: char.max_atk,
+      max_def: char.max_def
+    });
+
+    // Generates a unique, non-reversible SHA-256 hash representing the current skill configuration state
+    const currentDataChecksum = crypto.createHash('sha256').update(dataFingerprintString).digest('hex');
+    const existingEvaluation = char.meta_evaluation;
+
+    // INCREMENTAL CHECK: Skips execution if evaluation exists and checksum matches perfectly (No EZA, no skill edits)
+    if (existingEvaluation && existingEvaluation.data_checksum === currentDataChecksum) {
+      console.log(`Skipping Asset: ${char.name} [ID: ${char.id}] -> Standalone evaluation parameters are fully up-to-date.`);
+      continue;
+    }
+
+    if (!existingEvaluation) {
+      console.log(`Target Identified: ${char.name} [ID: ${char.id}] -> Unindexed card profile detected. Launching AI pipe...`);
+    } else {
+      console.log(`Target Identified: ${char.name} [ID: ${char.id}] -> Skill metrics or EZA modifications detected. Re-evaluating...`);
+    }
+
     const systemPrompt = `You are an elite, hyper-objective Dragon Ball Z Dokkan Battle analytics intelligence engine specialized in standalone card calibration within the 2026 endgame meta ecosystem.
 
 CRITICAL INSTRUCTION: You must evaluate this character as a self-contained unit. Do NOT automatically compare it to or rank it against recent premium benchmark cards like LR Beast Gohan unless specifically analyzing card-name link requirements. Evaluate what this unit brings to the table on its own merits, adjusted strictly for its release layout, mechanical traits, and current maximum awakening tier.
@@ -150,17 +182,16 @@ Character Under Evaluation Parameters:
           "X-Title": "Dokkan SaaS Analytics Engine"
         },
         body: JSON.stringify({
-          model: "deepseek/deepseek-v4-flash", // Upgraded to DeepSeek V4 Flash for maximized execution velocity and low latency throughput
+          model: "deepseek/deepseek-v4-flash",
           messages: [
             { role: "system", content: systemPrompt },
             { role: "user", content: userPrompt }
           ],
           temperature: 0.1
         }),
-        signal: controller.signal // Links the fetch request directly to our safety abort fuse
+        signal: controller.signal
       });
 
-      // Clear timeout immediately upon successful api response resolve
       clearTimeout(timeoutId);
 
       const jsonRes = await response.json();
@@ -179,6 +210,9 @@ Character Under Evaluation Parameters:
       // Parse sanitized JSON payload safely
       const parsedEval = JSON.parse(cleanedContent);
       
+      // Inject the current data checksum directly into the payload object to enable downstream checking
+      parsedEval.data_checksum = currentDataChecksum;
+      
       const { error: updateError } = await supabase
         .from('dokkan_characters')
         .update({ meta_evaluation: parsedEval })
@@ -191,7 +225,7 @@ Character Under Evaluation Parameters:
       }
 
     } catch (processError) {
-      clearTimeout(timeoutId); // Ensure cleanup in case of normal errors
+      clearTimeout(timeoutId);
       if (processError.name === 'AbortError') {
         console.error(`Skipping Asset: ${char.name} [ID: ${char.id}] -> Execution exceeded strict 30-second processing threshold.`);
       } else {
