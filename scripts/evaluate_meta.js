@@ -137,6 +137,10 @@ Character Under Evaluation Parameters:
 - Active Skill Data: Name: ${char.active_skill_name || 'None'} | Condition: ${char.active_skill_condition || 'None'} | Effect: ${char.active_skill_effect || 'None'}
 - Character Maximum Stats: HP: ${char.max_hp || 0}, ATK: ${char.max_atk || 0}, DEF: ${char.max_def || 0}`;
 
+    // Setup Native AbortController for the 30-second processing safety fuse
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000);
+
     try {
       const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
         method: "POST",
@@ -152,8 +156,12 @@ Character Under Evaluation Parameters:
             { role: "user", content: userPrompt }
           ],
           temperature: 0.1
-        })
+        }),
+        signal: controller.signal // Links the fetch request directly to our safety abort fuse
       });
+
+      // Clear timeout immediately upon successful api response resolve
+      clearTimeout(timeoutId);
 
       const jsonRes = await response.json();
       
@@ -183,7 +191,12 @@ Character Under Evaluation Parameters:
       }
 
     } catch (processError) {
-      console.error(`Failed to complete evaluation sequence for ID ${char.id}:`, processError.message);
+      clearTimeout(timeoutId); // Ensure cleanup in case of normal errors
+      if (processError.name === 'AbortError') {
+        console.error(`Skipping Asset: ${char.name} [ID: ${char.id}] -> Execution exceeded strict 30-second processing threshold.`);
+      } else {
+        console.error(`Failed to complete evaluation sequence for ID ${char.id}:`, processError.message);
+      }
     }
     
     // Controlled throttling delay to protect endpoint parameters safely
