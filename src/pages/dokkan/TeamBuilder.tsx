@@ -9,12 +9,13 @@ import {
   Swords, 
   Plus, 
   X, 
-  ShieldAlert, 
   Search,
   Sparkles,
   HelpCircle,
   TrendingUp,
   AlertTriangle,
+  ThumbsUp,
+  ThumbsDown,
   ChevronDown,
   Filter
 } from 'lucide-react';
@@ -219,17 +220,14 @@ export const TeamBuilder: React.FC = () => {
     );
   };
 
-  // Context-Sensitive Linking Partner Calculator matching Dokkan.fyi algorithms perfectly
   const getSharedLinksWithTeam = (char: Character, slotIdx: number) => {
     let targetPartners: Character[] = [];
     
-    // Pro-Rotation context lock: Identifies neighboring rotation anchor to calculate dedicated link links
     if (slotIdx === 0 && team[1].character) targetPartners.push(team[1].character);
     else if (slotIdx === 1 && team[0].character) targetPartners.push(team[0].character);
     else if (slotIdx === 2 && team[3].character) targetPartners.push(team[3].character);
     else if (slotIdx === 3 && team[2].character) targetPartners.push(team[2].character);
     else {
-      // Floaters check general rotation cross-links fallback
       targetPartners = team.filter((s, idx) => s.character && idx !== slotIdx).map(s => s.character) as Character[];
     }
 
@@ -245,7 +243,6 @@ export const TeamBuilder: React.FC = () => {
     });
   };
 
-  // Advanced Candidate Generation Layer filtering strictly by Category Missions if toggled
   const getCandidates = () => {
     let list = onlyBox ? allCharacters.filter(c => boxIds.includes(c.id)) : allCharacters;
 
@@ -265,7 +262,6 @@ export const TeamBuilder: React.FC = () => {
       const leader = team[0].character;
       const friend = team[6].character;
 
-      // Dynamic contextual sorting buddy node anchor identification
       let rotationPartner: Character | null = null;
       if (activeSlotIdx === 0) rotationPartner = team[1].character;
       else if (activeSlotIdx === 1) rotationPartner = team[0].character;
@@ -297,7 +293,6 @@ export const TeamBuilder: React.FC = () => {
         };
       });
 
-      // Sorting weight prioritizing direct localized rotation bridge linking parameters before raw tiers
       scoredList.sort((a, b) => {
         if (a.sameName !== b.sameName) return a.sameName ? 1 : -1;
         if (a.sharedLinksCount !== b.sharedLinksCount) return b.sharedLinksCount - a.sharedLinksCount;
@@ -339,17 +334,10 @@ export const TeamBuilder: React.FC = () => {
     return scored.slice(0, limit);
   };
 
-  // Structured Pro-Rotation Autobuilder Strategy
   const handleAutobuild = () => {
     const leader = team[0].character;
     if (!leader) return;
 
-    const skillText = (leader.leader_skill || '').toLowerCase();
-    const leaderCatIds = categoriesData
-      .filter(cat => skillText.includes(cat.name.toLowerCase()))
-      .map(cat => cat.id);
-
-    // Initial pool screening via leader skills & explicit category settings
     let pool = allCharacters.filter(c => boxIds.includes(c.id) && c.id !== leader.id);
     if (selectedEventCategory !== null) {
       pool = pool.filter(c => c.category_ids?.includes(selectedEventCategory));
@@ -399,7 +387,7 @@ export const TeamBuilder: React.FC = () => {
       usedNames.add(choice.name);
     }
 
-    // --- STEP 3: Build Rotation 2 DPS Bridge Partner ---
+    // --- STEP 3: Build Rotation 2 Partner ---
     const r2Anchor = builtTeam[2];
     if (r2Anchor) {
       let rot2PartnerScored = pool
@@ -419,7 +407,7 @@ export const TeamBuilder: React.FC = () => {
       }
     }
 
-    // --- STEP 4: Fill Floater Slots with residual Support/Utility items ---
+    // --- STEP 4: Fill Floater Slots ---
     for (let fIdx = 4; fIdx <= 5; fIdx++) {
       let floaterScored = pool
         .filter(c => !usedNames.has(c.name) && !usedIds.has(c.id))
@@ -439,13 +427,12 @@ export const TeamBuilder: React.FC = () => {
       }
     }
 
-    // Assign back to structural state array layout safely
     setTeam(prev => {
       const copy = [...prev];
       for (let i = 0; i <= 5; i++) {
         copy[i] = { ...copy[i], character: builtTeam[i] };
       }
-      copy[6] = { ...copy[6], character: leader }; // Friend clones original setup parameter
+      copy[6] = { ...copy[6], character: leader };
       return copy;
     });
 
@@ -496,17 +483,8 @@ export const TeamBuilder: React.FC = () => {
     return { boosts, activeLinks, sharedCategories };
   };
 
-  const getCategoryName = (id: number) => {
-    const cat = categoriesData.find((c: any) => c.id === id);
-    return cat ? cat.name : `Category ${id}`;
-  };
-
-  const getLinkName = (id: number) => {
-    const lk = linksData.find((l: any) => l.id === id);
-    return lk ? lk.name : `Link ${id}`;
-  };
-
   const analysis = computeTeamAnalysis();
+  const highlightedChar = team[highlightedSlotIdx]?.character;
 
   return (
     <div className="p-8 space-y-6">
@@ -668,7 +646,6 @@ export const TeamBuilder: React.FC = () => {
                 const char = slot.character;
                 const hasWarn = char ? hasSameNameWarning(char, idx) : false;
                 const boostVal = char ? (analysis.boosts.find(b => b.member.id === char.id)?.total ?? 0) : 0;
-                const activeLinksCount = char ? getSharedLinksWithTeam(char, idx).length : 0;
                 return (
                   <div
                     key={idx}
@@ -707,7 +684,7 @@ export const TeamBuilder: React.FC = () => {
           </div>
         </div>
 
-        {/* Right Sidebar - Highlighted Partner Analytics matching Dokkan.fyi mapping */}
+        {/* Right Sidebar - Highlighted Partner Analytics */}
         <div className="space-y-6">
           <div className="bg-[#161F30] border border-[#23324C] rounded-3xl p-6 space-y-6 shadow-xl relative">
             {highlightedChar ? (
