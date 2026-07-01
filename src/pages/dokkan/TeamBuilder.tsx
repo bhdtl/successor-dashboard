@@ -72,7 +72,7 @@ export const TeamBuilder: React.FC = () => {
   const [boxIds, setBoxIds] = useState<number[]>([]);
   const [highlightedSlotIdx, setHighlightedSlotIdx] = useState<number>(0);
 
-  // Hardcore Pro-Rotation Slot Layout
+  // Team slots configuration
   const [team, setTeam] = useState<TeamSlot[]>([
     { role: 'Rotation 1 - Slot 1 (Tank)', character: null }, // Index 0
     { role: 'Rotation 1 - Slot 2 (DPS)', character: null },  // Index 1
@@ -83,7 +83,7 @@ export const TeamBuilder: React.FC = () => {
     { role: 'Friend Leader', character: null },              // Index 6
   ]);
 
-  // Modal and filtration pipeline states
+  // Modal and filtration state pipeline
   const [activeSlotIdx, setActiveSlotIdx] = useState<number | null>(null);
   const [viewingProfileChar, setViewingProfileChar] = useState<Character | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -114,6 +114,7 @@ export const TeamBuilder: React.FC = () => {
     fetchData();
   }, [user]);
 
+  // Lock background scrolling
   useEffect(() => {
     if (activeSlotIdx !== null || viewingProfileChar !== null) {
       document.body.style.overflow = 'hidden';
@@ -218,7 +219,6 @@ export const TeamBuilder: React.FC = () => {
     );
   };
 
-  // Localized Cross-Link Evaluation Context Engine
   const getSharedLinksWithTeam = (char: Character, slotIdx: number) => {
     let targetPartners: Character[] = [];
     
@@ -258,7 +258,8 @@ export const TeamBuilder: React.FC = () => {
     }
 
     if (activeSlotIdx !== null) {
-      const leader = team[0].character || team[6].character;
+      const leader = team[0].character || team[1].character || team[4].character;
+      const friend = team[6].character;
 
       let rotationPartner: Character | null = null;
       if (activeSlotIdx === 0) rotationPartner = team[1].character;
@@ -289,12 +290,11 @@ export const TeamBuilder: React.FC = () => {
             sameName: hasSameNameWarning(c, activeSlotIdx)
           };
         })
-        // CRITICAL PRO DIRECTIVE: Disqualify or penalize units failing leader skill coverage instantly
         .filter(item => activeSlotIdx === 0 || leader === null || item.lBoost > 0);
 
       scoredList.sort((a, b) => {
         if (a.sameName !== b.sameName) return a.sameName ? 1 : -1;
-        if (b.lBoost !== a.lBoost) return b.lBoost - a.lBoost; // Max leader skill boost takes high priority
+        if (b.lBoost !== a.lBoost) return b.lBoost - a.lBoost;
         if (a.sharedLinksCount !== b.sharedLinksCount) return b.sharedLinksCount - a.sharedLinksCount;
         return b.aiWeight - a.aiWeight;
       });
@@ -307,7 +307,7 @@ export const TeamBuilder: React.FC = () => {
 
   const getLinkingPartnerRecommendations = (char: Character, limit = 5) => {
     let list = onlyBox ? allCharacters.filter(c => boxIds.includes(c.id)) : allCharacters;
-    const leader = team[0].character;
+    const leader = team[0].character || team[1].character || team[4].character;
     
     if (selectedEventCategory !== null) {
       list = list.filter(c => c.category_ids?.includes(selectedEventCategory));
@@ -326,7 +326,7 @@ export const TeamBuilder: React.FC = () => {
           aiWeight: getTierWeight(aiEval.tier)
         };
       })
-      .filter(item => item.boost > 0) // Pro-filter: Drop 0% leader units
+      .filter(item => item.boost > 0)
       .sort((a, b) => {
         if (a.sharedLinks.length !== b.sharedLinks.length) {
           return b.sharedLinks.length - a.sharedLinks.length;
@@ -338,9 +338,8 @@ export const TeamBuilder: React.FC = () => {
     return scored.slice(0, limit);
   };
 
-  // High-Tier Dokkan Pro Multi-Rotation Assembly Algorithm
   const handleAutobuild = () => {
-    const primaryInputLeader = team[0].character;
+    const primaryInputLeader = team[0].character || team[1].character || team[4].character;
     if (!primaryInputLeader) return;
 
     let pool = allCharacters.filter(c => boxIds.includes(c.id) && c.id !== primaryInputLeader.id);
@@ -348,7 +347,6 @@ export const TeamBuilder: React.FC = () => {
       pool = pool.filter(c => c.category_ids?.includes(selectedEventCategory));
     }
 
-    // Hard compliance screening: Filter pool to only contain units receiving >0% leader boost parameters
     pool = pool.filter(c => evaluateLeaderSkill(primaryInputLeader, c).pct > 0);
 
     if (pool.length === 0) {
@@ -362,18 +360,15 @@ export const TeamBuilder: React.FC = () => {
 
     const leaderSlotRole = primaryInputLeader.meta_evaluation?.slot || 'Slot 1';
 
-    // --- STRATEGIC PHASE 1: DYNAMIC LEADER ALLOCATION ---
     if (leaderSlotRole === 'Slot 1') {
-      builtTeam[0] = primaryInputLeader; // Set as Rotation 1 Main Tank Anchor
+      builtTeam[0] = primaryInputLeader;
     } else if (leaderSlotRole === 'Slot 2') {
-      builtTeam[1] = primaryInputLeader; // Set as Rotation 1 DPS Bridge
+      builtTeam[1] = primaryInputLeader;
     } else {
-      builtTeam[4] = primaryInputLeader; // Set as Floater 1
+      builtTeam[4] = primaryInputLeader;
     }
 
-    // --- STRATEGIC PHASE 2: ROTATION 1 COMPLETION ---
     if (builtTeam[0] && !builtTeam[1]) {
-      // Find matching bridge partner for leader tank
       let bestBridge = pool
         .filter(c => !usedNames.has(c.name))
         .map(c => {
@@ -386,7 +381,6 @@ export const TeamBuilder: React.FC = () => {
         builtTeam[1] = bestBridge.char; usedIds.add(bestBridge.char.id); usedNames.add(bestBridge.char.name);
       }
     } else if (builtTeam[1] && !builtTeam[0]) {
-      // Find matching main tank anchor for leader bridge
       let bestTank = pool
         .filter(c => !usedNames.has(c.name) && c.meta_evaluation?.slot === 'Slot 1')
         .map(c => {
@@ -399,7 +393,6 @@ export const TeamBuilder: React.FC = () => {
         builtTeam[0] = bestTank.char; usedIds.add(bestTank.char.id); usedNames.add(bestTank.char.name);
       }
     } else if (!builtTeam[0] && !builtTeam[1]) {
-      // Leader is a floater, completely build Rotation 1 from scratch
       let bestTank = pool
         .filter(c => c.meta_evaluation?.slot === 'Slot 1')
         .sort((a, b) => getTierWeight(b.meta_evaluation?.tier || 'F') - getTierWeight(a.meta_evaluation?.tier || 'F'))[0];
@@ -418,7 +411,6 @@ export const TeamBuilder: React.FC = () => {
       }
     }
 
-    // --- STRATEGIC PHASE 3: ROTATION 2 COMPLETION ---
     let r2Tank = pool
       .filter(c => !usedNames.has(c.name) && !usedIds.has(c.id) && c.meta_evaluation?.slot === 'Slot 1')
       .map(c => {
@@ -427,7 +419,6 @@ export const TeamBuilder: React.FC = () => {
         return { char: c, score: (weight * 300) + (boost * 20) };
       }).sort((a, b) => b.score - a.score)[0]?.char;
 
-    // Fallback if no explicit slot 1 tank remains unassigned
     if (!r2Tank) {
       r2Tank = pool
         .filter(c => !usedNames.has(c.name) && !usedIds.has(c.id))
@@ -448,9 +439,8 @@ export const TeamBuilder: React.FC = () => {
       }
     }
 
-    // --- STRATEGIC PHASE 4: FLOATER PIPELINE ASSEMBLY ---
     for (let i = 4; i <= 5; i++) {
-      if (builtTeam[i]) continue; // Skip if leader filled slot 4 already
+      if (builtTeam[i]) continue;
       let bestFloater = pool
         .filter(c => !usedNames.has(c.name) && !usedIds.has(c.id))
         .map(c => {
@@ -464,7 +454,6 @@ export const TeamBuilder: React.FC = () => {
       }
     }
 
-    // Save configuration directly to structural state mapping layout cleanly
     setTeam(prev => {
       const copy = [...prev];
       for (let i = 0; i <= 5; i++) {
@@ -519,16 +508,6 @@ export const TeamBuilder: React.FC = () => {
       })).sort((a, b) => b.count - a.count);
 
     return { boosts, activeLinks, sharedCategories };
-  };
-
-  const getCategoryName = (id: number) => {
-    const cat = categoriesData.find((c: any) => c.id === id);
-    return cat ? cat.name : `Category ${id}`;
-  };
-
-  const getLinkName = (id: number) => {
-    const lk = linksData.find((l: any) => l.id === id);
-    return lk ? lk.name : `Link ${id}`;
   };
 
   const analysis = computeTeamAnalysis();
@@ -598,12 +577,7 @@ export const TeamBuilder: React.FC = () => {
                 return (
                   <div
                     key={idx}
-                    onClick={() => {
-                      setHighlightedSlotIdx(idx);
-                      if (!char) {
-                        setActiveSlotIdx(idx);
-                      }
-                    }}
+                    onClick={() => { setHighlightedSlotIdx(idx); if (!char) setActiveSlotIdx(idx); }}
                     className={`bg-[#161F30]/80 border rounded-2xl p-4 flex flex-col items-center justify-between min-h-[260px] transition-all cursor-pointer relative group ${
                       highlightedSlotIdx === idx ? 'border-blue-500 ring-1 ring-blue-500/20 bg-[#161F30]' : 'border-[#23324C]'
                     }`}
