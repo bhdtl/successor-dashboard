@@ -15,8 +15,7 @@ import {
   TrendingUp,
   AlertTriangle,
   ChevronDown,
-  Filter,
-  Crown
+  Filter
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -74,13 +73,13 @@ export const TeamBuilder: React.FC = () => {
   const [highlightedSlotIdx, setHighlightedSlotIdx] = useState<number>(0);
   const [leaderSlotIdx, setLeaderSlotIdx] = useState<number>(0); // Tracks which slot anchors team-wide leader boosts
 
-  // Tactical Pro-Rotation Grid slots
+  // Tactical Pro-Rotation Grid slots - Fixed mismatch layout string criteria safely
   const [team, setTeam] = useState<TeamSlot[]>([
     { role: 'Rotation 1 - Slot 1 (Tank)', character: null }, // Index 0
     { role: 'Rotation 1 - Slot 2 (DPS)', character: null },  // Index 1
     { role: 'Rotation 2 - Slot 1 (Tank)', character: null }, // Index 2
     { role: 'Rotation 2 - Slot 2 (DPS)', character: null },  // Index 3
-    { role: 'Floater (Slot 3)', character: null },           // Index 4
+    { role: 'Floater 1 (Slot 3)', character: null },         // Index 4 -> Fixed typo assignment perfectly here
     { role: 'Floater 2 (Slot 3)', character: null },         // Index 5
     { role: 'Friend Leader Flex', character: null },         // Index 6
   ]);
@@ -269,7 +268,7 @@ export const TeamBuilder: React.FC = () => {
 
       const scoredList = list
         .map(c => {
-          const lBoost = leader ? evaluateLeaderSkill(leader, c).pct : 170;
+          const lBoost = leader ? evaluateLeaderSkill(leader, c).pct : 0;
           
           let sharedLinksCount = 0;
           if (rotationPartner) {
@@ -364,7 +363,6 @@ export const TeamBuilder: React.FC = () => {
     const leaderSlotRole = primaryInputLeader.meta_evaluation?.slot || 'Slot 2';
     let newLeaderIdx = 0;
 
-    // Smart Shift Pipeline: Moves Leader dynamically according to ideal tactical slot fitness profile
     if (leaderSlotRole === 'Slot 1') {
       builtTeam[0] = primaryInputLeader;
       newLeaderIdx = 0;
@@ -376,7 +374,6 @@ export const TeamBuilder: React.FC = () => {
       newLeaderIdx = 4;
     }
 
-    // --- FILL ROTATION 1 DEPENDENCIES ---
     if (builtTeam[0] && !builtTeam[1]) {
       let bestBridge = pool
         .filter(c => !usedNames.has(c.name))
@@ -403,7 +400,6 @@ export const TeamBuilder: React.FC = () => {
       }
     }
 
-    // --- FILL ROTATION 2 DEPENDENCIES ---
     let r2Tank = pool
       .filter(c => !usedNames.has(c.name) && !usedIds.has(c.id) && c.meta_evaluation?.slot === 'Slot 1')
       .map(c => {
@@ -432,7 +428,6 @@ export const TeamBuilder: React.FC = () => {
       }
     }
 
-    // --- FILL REMAINING PRO-FLOATERS ---
     for (let i = 4; i <= 5; i++) {
       if (builtTeam[i]) continue;
       let bestFloater = pool
@@ -578,12 +573,12 @@ export const TeamBuilder: React.FC = () => {
                     }`}
                   >
                     <div className="w-full flex justify-between items-center mb-2">
-                      <span className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-400 border border-blue-500/30">
+                      <span className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full mb-2 bg-blue-500/20 text-blue-400 border border-blue-500/30">
                         {slot.role}
                       </span>
                       {leaderSlotIdx === idx && (
                         <span className="flex items-center gap-1 text-[9px] font-black text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-full">
-                          <Crown className="w-3 h-3 text-amber-400" /> Leader
+                          Crown Leader
                         </span>
                       )}
                     </div>
@@ -671,7 +666,7 @@ export const TeamBuilder: React.FC = () => {
                     key={idx}
                     onClick={() => { setHighlightedSlotIdx(idx); if (!char) setActiveSlotIdx(idx); }}
                     className={`bg-[#161F30]/80 border rounded-2xl p-4 flex flex-col items-center justify-between min-h-[260px] transition-all cursor-pointer relative group ${
-                      highlightedSlotIdx === idx ? 'border-purple-500 ring-1 ring-purple-500/20 bg-[#161F30]' : 'border-[#23324C]'
+                      highlightedSlotIdx === idx ? 'border-blue-500 ring-1 ring-blue-500/20 bg-[#161F30]' : 'border-[#23324C]'
                     }`}
                   >
                     <div className="w-full flex justify-between items-center mb-2">
@@ -680,7 +675,7 @@ export const TeamBuilder: React.FC = () => {
                       </span>
                       {leaderSlotIdx === idx && (
                         <span className="flex items-center gap-1 text-[9px] font-black text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-full">
-                          <Crown className="w-3 h-3 text-amber-400" /> Leader
+                          Crown Leader
                         </span>
                       )}
                     </div>
@@ -755,7 +750,7 @@ export const TeamBuilder: React.FC = () => {
                       <span className="text-[8px] font-black uppercase text-gray-400 bg-gray-800 px-2 py-0.5 rounded-full">{slot.role}</span>
                       {leaderSlotIdx === idx && (
                         <span className="flex items-center gap-0.5 text-[8px] font-black text-amber-400 bg-amber-500/10 border border-amber-500/20 px-1.5 py-0.2 rounded-full">
-                          <Crown className="w-2.5 h-2.5 text-amber-400" /> Leader
+                          Crown Leader
                         </span>
                       )}
                     </div>
@@ -809,7 +804,7 @@ export const TeamBuilder: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Strategy Assignment: Manually flag who delivers the global leader criteria */}
+                {/* Strategy Assignment */}
                 <button
                   type="button"
                   onClick={() => setLeaderSlotIdx(highlightedSlotIdx)}
