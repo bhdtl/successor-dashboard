@@ -1,0 +1,233 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html, body {
+  background-color: #0d0e10;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  @apply bg-[#0d0e10] text-gray-100;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "SF Pro", "SF Compact", "Inter", sans-serif;
+  overflow-x: hidden;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* --- UTILITIES: HIDE SCROLLBAR --- */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* --- CUSTOM SCROLLBAR FOR PREMIUM DESKTOP VIEW --- */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.2);
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* --- LIQUID GLASS COMPONENTS (Successor Mint Update) --- */
+
+.liquid-glass-sidebar {
+  position: relative;
+  height: 100%;
+  border-right: 1px solid rgba(255, 255, 255, 0.06);
+  padding: 1.5px 0 1.5px 1.5px;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.04) 0%,
+    rgba(255, 255, 255, 0.01) 100%
+  );
+  box-shadow:
+    8px 0 40px rgba(0, 0, 0, 0.5),
+    inset 1px 0 0 rgba(255, 255, 255, 0.04);
+}
+
+.liquid-glass-sidebar::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(13, 14, 16, 0.85);
+  backdrop-filter: blur(40px) saturate(180%);
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  z-index: 0;
+}
+
+.liquid-glass-sidebar-content {
+  position: relative;
+  z-index: 2;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* --- APPLE HIG NATIVE LAYOUT UPDATES (Mobile Mode) --- */
+
+.ios-nav-bar {
+  width: 100%;
+  height: 52px;
+  background: rgba(13, 14, 16, 0.8);
+  backdrop-filter: blur(25px) saturate(180%);
+  -webkit-backdrop-filter: blur(25px) saturate(180%);
+  border-bottom: 0.5px solid rgba(255, 255, 255, 0.06);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ios-tab-bar {
+  position: relative;
+  width: 100%;
+  border-radius: 24px;
+  background: rgba(22, 24, 30, 0.6);
+  backdrop-filter: blur(40px) saturate(220%);
+  -webkit-backdrop-filter: blur(40px) saturate(220%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 
+    0 16px 40px rgba(0, 0, 0, 0.6),
+    0 4px 16px rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+}
+
+.ios-tab-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  height: 58px;
+  padding: 0 6px;
+}
+
+.ios-tab-item {
+  position: relative;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  -webkit-tap-highlight-color: transparent;
+  text-decoration: none;
+}
+
+.ios-tab-item:active {
+  transform: scale(0.95);
+}
+
+.ios-tab-content {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.2s ease;
+}
+
+.ios-tab-active {
+  color: #00ff88; /* Successor Mint Accent */
+  filter: drop-shadow(0 0 6px rgba(0, 255, 136, 0.35));
+}
+
+.ios-tab-inactive {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.ios-tab-inactive:hover {
+  color: rgba(255, 255, 255, 0.65);
+}
+
+.ios-tab-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  line-height: 1;
+}
+
+.ios-tab-avatar {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  transition: all 0.2s ease;
+}
+
+.ios-tab-avatar-active {
+  background: rgba(0, 255, 136, 0.1);
+  border-color: rgba(0, 255, 136, 0.4);
+  color: #00ff88;
+}
+
+/* --- GLASS CARDS & EFFECTS --- */
+
+.glass-card {
+  background: rgba(22, 24, 30, 0.5);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow: 
+    0 8px 32px 0 rgba(0, 0, 0, 0.37),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.02);
+}
+
+.glass-card-hover {
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+.glass-card-hover:hover {
+  background: rgba(25, 28, 36, 0.6);
+  border-color: rgba(255, 255, 255, 0.1);
+  box-shadow: 
+    0 12px 40px 0 rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.05);
+}
+
+.glow-mint {
+  box-shadow: 0 0 20px rgba(0, 255, 136, 0.15);
+}
+
+/* --- PREMIUM SOCCER PITCH --- */
+.soccer-pitch {
+  position: relative;
+  background: radial-gradient(circle at center, #1b3d2b 0%, #0c1a12 100%);
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 
+    inset 0 0 50px rgba(0, 0, 0, 0.8),
+    0 10px 40px rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* Pitch lines using svg/css */
+.pitch-line {
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+/* Button & interactive items in Successor style */
+.btn-primary {
+  @apply bg-white text-black font-black uppercase text-xs tracking-widest rounded-xl hover:scale-105 active:scale-95 transition-all shadow-lg;
+}
+
+.btn-secondary {
+  @apply bg-white/[0.04] text-white font-bold text-xs tracking-wide rounded-xl border border-white/[0.06] hover:bg-white/[0.08] hover:border-white/[0.1] transition-all;
+}
+
+.btn-mint {
+  @apply bg-[#00ff88] text-black font-black uppercase text-[10px] sm:text-xs tracking-widest rounded-xl hover:scale-[1.03] active:scale-[0.97] transition-all shadow-md shadow-[#00ff88]/20;
+}
