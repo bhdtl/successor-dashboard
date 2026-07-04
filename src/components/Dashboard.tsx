@@ -5,9 +5,10 @@ interface DashboardProps {
   players: Player[];
   lineup: (Player | undefined)[];
   budget: number;
+  onLoadDemoData?: () => void;
 }
 
-export function Dashboard({ players, lineup, budget }: DashboardProps) {
+export function Dashboard({ players, lineup, budget, onLoadDemoData }: DashboardProps) {
   // Calculations
   const squadValue = players.reduce((sum, p) => sum + p.price, 0);
   const activeLineup = lineup.filter(Boolean) as Player[];
@@ -111,8 +112,26 @@ export function Dashboard({ players, lineup, budget }: DashboardProps) {
           <div className="text-[11px] text-successor-textMuted font-mono relative z-10">
             Sofort verfügbarer Cash-Bestand
           </div>
-        </div>
       </div>
+    </div>
+
+      {/* EMPTY SQUAD CALL-OUT */}
+      {players.length === 0 && onLoadDemoData && (
+        <div className="glass-card rounded-2xl p-6 border border-successor-mint/20 bg-successor-mint/5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
+          <div className="space-y-1">
+            <h3 className="text-sm font-black uppercase tracking-wider text-white">Dein Kader ist noch leer</h3>
+            <p className="text-xs text-successor-textMuted font-mono">
+              Füge Spieler im Transfer-Helfer hinzu, erstelle eigene im Admin-Panel oder lade fertige Bundesliga-Demodaten.
+            </p>
+          </div>
+          <button
+            onClick={onLoadDemoData}
+            className="btn-mint whitespace-nowrap"
+          >
+            Demo-Daten laden
+          </button>
+        </div>
+      )}
 
       {/* CHART & DETAILS VIEW */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">

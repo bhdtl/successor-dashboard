@@ -7,8 +7,7 @@ import {
   ShieldAlert, 
   ChevronRight, 
   LogOut, 
-  User, 
-  UserCheck
+  LogIn
 } from 'lucide-react';
 
 // Subcomponents
@@ -17,10 +16,12 @@ import { PlayerAnalysis } from './components/PlayerAnalysis';
 import { TransferHelper } from './components/TransferHelper';
 import { LineupPlanner } from './components/LineupPlanner';
 import { AdminCMS } from './components/AdminCMS';
+import { AuthModal } from './components/AuthModal';
 import type { Player } from './components/PlayerCard';
+import { supabase, isOfflineMode } from './lib/supabase';
 
-// Preloaded mock database of Bundesliga players
-const INITIAL_DATABASE: Player[] = [
+// Mock database to preload when "Demo-Daten laden" is clicked
+const DEMO_DATABASE: Player[] = [
   { id: '1', name: 'Florian Wirtz', position: 'MID', price: 42000000, xp: 215, form: 1.4, team: 'Bayer Leverkusen', opponent: 'FC Bayern', isHome: false, avatarColor: 'from-red-600 to-black' },
   { id: '2', name: 'Jamal Musiala', position: 'MID', price: 39500000, xp: 195, form: 1.3, team: 'FC Bayern', opponent: 'Leverkusen', isHome: true, avatarColor: 'from-red-600 to-red-950' },
   { id: '3', name: 'Harry Kane', position: 'FWD', price: 46000000, xp: 240, form: 1.2, team: 'FC Bayern', opponent: 'Leverkusen', isHome: true, avatarColor: 'from-red-600 to-red-950' },
@@ -36,46 +37,67 @@ const INITIAL_DATABASE: Player[] = [
 export default function App() {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'analytics' | 'transfer' | 'lineup' | 'admin'>('dashboard');
   
-  // Roster / Database states
-  const [dbPlayers, setDbPlayers] = useState<Player[]>(INITIAL_DATABASE);
-  const [squad, setSquad] = useState<Player[]>([
-    INITIAL_DATABASE[0], // Wirtz
-    INITIAL_DATABASE[1], // Musiala
-    INITIAL_DATABASE[3], // Grimaldo
-    INITIAL_DATABASE[4], // Kobel
-    INITIAL_DATABASE[5], // Schlotterbeck
-  ]);
+  // Database starts completely clean (at 0)
+  const [dbPlayers, setDbPlayers] = useState<Player[]>([]);
+  const [squad, setSquad] = useState<Player[]>([]);
+  const [lineup, setLineup] = useState<(Player | undefined)[]>(Array(11).fill(undefined));
+  const [budget, setBudget] = useState<number>(50000000); // 50M default starting cash
 
-  // Lineup state (11 slots: index 0 = GK, 1-4 = DEF, 5-9 = MID, 10 = FWD)
-  const [lineup, setLineup] = useState<(Player | undefined)[]>([
-    INITIAL_DATABASE[4], // GK: Kobel
-    INITIAL_DATABASE[3], // DEF: Grimaldo
-    INITIAL_DATABASE[5], // DEF: Schlotterbeck
-    undefined,           // DEF: empty
-    undefined,           // DEF: empty
-    INITIAL_DATABASE[0], // MID: Wirtz
-    INITIAL_DATABASE[1], // MID: Musiala
-    undefined,           // MID: empty
-    undefined,           // MID: empty
-    undefined,           // MID: empty
-    undefined,           // FWD: empty
-  ]);
-
-  const [budget, setBudget] = useState<number>(31500000); // 31.5M
-
-  // Simulated email account state
-  // Can be: null (Logged out), "user@domain.com" (Normal user), "bh.dtl@web.de" (Founder admin)
-  const [userEmail, setUserEmail] = useState<string | null>('user@domain.com');
-  const [showUserSwitcher, setShowUserSwitcher] = useState(false);
+  // Auth states
+  const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [showAuthModal, setShowAuthModal] = useState(false);
 
   const isAdmin = userEmail === 'bh.dtl@web.de';
 
-  // Redirect away from Admin tab if admin status is lost
+  // 1. Supabase Auth Session listener
+  useEffect(() => {
+    if (isOfflineMode) return;
+
+    // Load initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUserEmail(session?.user?.email || null);
+    });
+
+    // Listen to changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUserEmail(session?.user?.email || null);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  // 2. Redirect away from Admin tab if admin status is lost
   useEffect(() => {
     if (activeTab === 'admin' && !isAdmin) {
       setActiveTab('dashboard');
     }
   }, [userEmail, activeTab, isAdmin]);
+
+  // Handler to load demo data
+  const handleLoadDemoData = () => {
+    setDbPlayers(DEMO_DATABASE);
+    setSquad([
+      DEMO_DATABASE[0], // Wirtz
+      DEMO_DATABASE[1], // Musiala
+      DEMO_DATABASE[3], // Grimaldo
+      DEMO_DATABASE[4], // Kobel
+      DEMO_DATABASE[5], // Schlotterbeck
+    ]);
+    setLineup([
+      DEMO_DATABASE[4], // GK: Kobel
+      DEMO_DATABASE[3], // DEF: Grimaldo
+      DEMO_DATABASE[5], // DEF: Schlotterbeck
+      undefined,
+      undefined,
+      DEMO_DATABASE[0], // MID: Wirtz
+      DEMO_DATABASE[1], // MID: Musiala
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+    ]);
+    setBudget(31500000); // Remaining cash from demo squad
+  };
 
   // Handler to buy/add player to squad
   const handleAddToSquad = (player: Player) => {
@@ -109,12 +131,23 @@ export default function App() {
   };
 
   const handleBulkAddPlayers = (newPlayers: Player[]) => {
-    // Merge new players preventing duplicates
     setDbPlayers(prev => {
       const existingIds = new Set(prev.map(p => p.id));
       const filteredNew = newPlayers.filter(p => !existingIds.has(p.id));
       return [...filteredNew, ...prev];
     });
+  };
+
+  const handleLoginSuccess = (email: string) => {
+    setUserEmail(email);
+  };
+
+  const handleLogout = async () => {
+    if (!isOfflineMode) {
+      await supabase.auth.signOut();
+    }
+    setUserEmail(null);
+    setActiveTab('dashboard');
   };
 
   const squadIds = new Set(squad.map(p => p.id));
@@ -143,6 +176,7 @@ export default function App() {
       <aside className="hidden md:block w-72 flex-shrink-0 z-30">
         <div className="liquid-glass-sidebar">
           <div className="liquid-glass-sidebar-content h-screen p-5 flex flex-col justify-between">
+            
             {/* Header Branding */}
             <div className="space-y-6">
               <div className="flex items-center gap-3 pt-2">
@@ -188,57 +222,42 @@ export default function App() {
               </nav>
             </div>
 
-            {/* User Profile Card & Identity Switcher */}
+            {/* User Profile Card & Sign In Control */}
             <div className="space-y-3 border-t border-white/[0.06] pt-5">
-              <div className="relative">
+              {userEmail ? (
+                <div className="w-full flex items-center justify-between p-3 bg-white/[0.02] border border-white/[0.04] rounded-xl">
+                  <div className="flex items-center gap-3 overflow-hidden">
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${isAdmin ? 'bg-successor-mint/15 text-successor-mint border border-successor-mint/20' : 'bg-white/[0.06] text-gray-400 border border-white/5'}`}>
+                      {isAdmin ? <ShieldAlert size={14} /> : <User size={14} />}
+                    </div>
+                    <div className="overflow-hidden">
+                      <div className="text-xs font-bold text-white truncate">
+                        {userEmail.split('@')[0]}
+                      </div>
+                      <div className="text-[8px] font-mono text-successor-textMuted truncate">
+                        {userEmail}
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    onClick={handleLogout}
+                    className="p-2 text-gray-500 hover:text-white hover:bg-white/5 rounded-lg transition-colors flex-shrink-0"
+                    title="Abmelden"
+                  >
+                    <LogOut size={14} />
+                  </button>
+                </div>
+              ) : (
                 <button
-                  onClick={() => setShowUserSwitcher(!showUserSwitcher)}
-                  className="w-full flex items-center gap-3 p-3 bg-white/[0.02] border border-white/[0.04] rounded-xl hover:bg-white/[0.04] transition-all text-left"
+                  onClick={() => setShowAuthModal(true)}
+                  className="w-full flex items-center justify-center gap-2 py-2.5 bg-white/[0.04] border border-white/[0.06] rounded-xl hover:bg-white/[0.08] hover:border-white/[0.1] text-xs font-bold text-white transition-all active:scale-[0.98]"
                 >
-                  <div className={`w-9 h-9 rounded-full flex items-center justify-center ${isAdmin ? 'bg-successor-mint/15 text-successor-mint border border-successor-mint/20' : 'bg-white/[0.06] text-gray-400 border border-white/5'}`}>
-                    {isAdmin ? <ShieldAlert size={16} /> : <User size={16} />}
-                  </div>
-                  <div className="flex-1 overflow-hidden">
-                    <div className="text-xs font-bold text-white truncate">
-                      {userEmail ? userEmail.split('@')[0] : 'Gast-Zugang'}
-                    </div>
-                    <div className="text-[8px] font-mono text-successor-textMuted truncate">
-                      {userEmail || 'Bitte einloggen'}
-                    </div>
-                  </div>
+                  <LogIn size={14} />
+                  <span>Anmelden</span>
                 </button>
-
-                {/* Identity Switcher Dropdown */}
-                {showUserSwitcher && (
-                  <div className="absolute bottom-full left-0 right-0 mb-2 bg-[#121316] border border-white/[0.08] rounded-xl p-2 shadow-2xl z-40 space-y-1">
-                    <div className="text-[8px] font-mono text-gray-500 uppercase px-2 py-1">
-                      Account simulieren:
-                    </div>
-                    <button
-                      onClick={() => { setUserEmail('user@domain.com'); setShowUserSwitcher(false); }}
-                      className="w-full text-left px-2 py-1.5 rounded-lg text-[10px] text-gray-300 hover:bg-white/5 flex items-center gap-1.5"
-                    >
-                      <User size={10} />
-                      Standard User
-                    </button>
-                    <button
-                      onClick={() => { setUserEmail('bh.dtl@web.de'); setShowUserSwitcher(false); }}
-                      className="w-full text-left px-2 py-1.5 rounded-lg text-[10px] text-successor-mint font-bold hover:bg-white/5 flex items-center gap-1.5"
-                    >
-                      <UserCheck size={10} />
-                      bh.dtl@web.de (Admin)
-                    </button>
-                    <button
-                      onClick={() => { setUserEmail(null); setShowUserSwitcher(false); }}
-                      className="w-full text-left px-2 py-1.5 rounded-lg text-[10px] text-red-400 hover:bg-white/5 flex items-center gap-1.5"
-                    >
-                      <LogOut size={10} />
-                      Ausloggen (Gast)
-                    </button>
-                  </div>
-                )}
-              </div>
+              )}
             </div>
+
           </div>
         </div>
       </aside>
@@ -253,45 +272,34 @@ export default function App() {
             <span className="text-sm font-black uppercase tracking-wider text-white">Successor</span>
           </div>
 
-          {/* Quick Simulated Auth Switcher for Mobile testing */}
-          <div className="relative">
+          {/* Login/Logout Button for Mobile */}
+          {userEmail ? (
             <button
-              onClick={() => setShowUserSwitcher(!showUserSwitcher)}
+              onClick={handleLogout}
+              className="text-[9px] font-black uppercase tracking-wider bg-red-950/20 border border-red-900/30 rounded-lg px-2.5 py-1 text-red-400 hover:text-white"
+            >
+              Logout
+            </button>
+          ) : (
+            <button
+              onClick={() => setShowAuthModal(true)}
               className="text-[9px] font-black uppercase tracking-wider bg-white/[0.04] border border-white/[0.06] rounded-lg px-2.5 py-1 text-gray-300 hover:text-white"
             >
-              Simulate Auth
+              Login
             </button>
-            
-            {showUserSwitcher && (
-              <div className="absolute right-0 top-full mt-2 w-48 bg-[#121316] border border-white/[0.08] rounded-xl p-2 shadow-2xl z-40 space-y-1">
-                <button
-                  onClick={() => { setUserEmail('user@domain.com'); setShowUserSwitcher(false); }}
-                  className="w-full text-left px-2 py-1.5 rounded-lg text-[10px] text-gray-300 hover:bg-white/5"
-                >
-                  Standard User
-                </button>
-                <button
-                  onClick={() => { setUserEmail('bh.dtl@web.de'); setShowUserSwitcher(false); }}
-                  className="w-full text-left px-2 py-1.5 rounded-lg text-[10px] text-successor-mint font-bold hover:bg-white/5"
-                >
-                  bh.dtl@web.de (Admin)
-                </button>
-                <button
-                  onClick={() => { setUserEmail(null); setShowUserSwitcher(false); }}
-                  className="w-full text-left px-2 py-1.5 rounded-lg text-[10px] text-red-400 hover:bg-white/5"
-                >
-                  Logout (Gast)
-                </button>
-              </div>
-            )}
-          </div>
+          )}
         </header>
 
         {/* PAGE BODY AREA */}
         <main className="flex-grow pt-[calc(3.5rem+env(safe-area-inset-top,0px))] pb-[calc(5rem+env(safe-area-inset-bottom,0px))] md:pb-6 md:pt-6 px-4 md:px-8 max-w-6xl w-full mx-auto overflow-y-auto no-scrollbar">
           
           {activeTab === 'dashboard' && (
-            <Dashboard players={squad} lineup={lineup} budget={budget} />
+            <Dashboard 
+              players={squad} 
+              lineup={lineup} 
+              budget={budget} 
+              onLoadDemoData={handleLoadDemoData} 
+            />
           )}
 
           {activeTab === 'analytics' && (
@@ -322,7 +330,6 @@ export default function App() {
           <nav className="ios-tab-bar">
             <div className="ios-tab-inner">
               
-              {/* Tab 1: Dashboard */}
               <button
                 onClick={() => setActiveTab('dashboard')}
                 className="ios-tab-item"
@@ -333,7 +340,6 @@ export default function App() {
                 </div>
               </button>
 
-              {/* Tab 2: Analytics */}
               <button
                 onClick={() => setActiveTab('analytics')}
                 className="ios-tab-item"
@@ -344,7 +350,6 @@ export default function App() {
                 </div>
               </button>
 
-              {/* Tab 3: Transfer */}
               <button
                 onClick={() => setActiveTab('transfer')}
                 className="ios-tab-item"
@@ -355,7 +360,6 @@ export default function App() {
                 </div>
               </button>
 
-              {/* Tab 4: Lineup */}
               <button
                 onClick={() => setActiveTab('lineup')}
                 className="ios-tab-item"
@@ -366,7 +370,6 @@ export default function App() {
                 </div>
               </button>
 
-              {/* Tab 5: Admin CMS (Only visible if email is bh.dtl@web.de) */}
               {isAdmin && (
                 <button
                   onClick={() => setActiveTab('admin')}
@@ -384,6 +387,13 @@ export default function App() {
         </div>
 
       </div>
+
+      {/* Auth Modal Portal Overlay */}
+      <AuthModal 
+        isOpen={showAuthModal} 
+        onClose={() => setShowAuthModal(false)} 
+        onLoginSuccess={handleLoginSuccess} 
+      />
 
     </div>
   );

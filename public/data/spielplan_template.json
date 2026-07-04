@@ -1,0 +1,18 @@
+{
+  "spieltage": [
+    {
+      "spieltag": 1,
+      "matches": [
+        { "home": "FC Bayern", "away": "Bayer Leverkusen", "date": "2026-08-21T20:30:00Z" },
+        { "home": "Borussia Dortmund", "away": "VfB Stuttgart", "date": "2026-08-22T15:30:00Z" },
+        { "home": "RB Leipzig", "away": "Eintracht Frankfurt", "date": "2026-08-22T15:30:00Z" },
+        { "home": "Mönchengladbach", "away": "Bremem", "date": "2026-08-22T15:30:00Z" },
+        { "home": "Freiburg", "away": "Mainz 05", "date": "2026-08-22T15:30:00Z" },
+        { "home": "Wolfsburg", "away": "Augsburg", "date": "2026-08-22T15:30:00Z" },
+        { "home": "Hoffenheim", "away": "Kiel", "date": "2026-08-22T18:30:00Z" },
+        { "home": "St. Pauli", "away": "Heidenheim", "date": "2026-08-23T15:30:00Z" },
+        { "home": "Bochum", "away": "Union Berlin", "date": "2026-08-23T17:30:00Z" }
+      ]
+    }
+  ]
+}

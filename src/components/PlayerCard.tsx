@@ -12,6 +12,7 @@ export interface Player {
   isHome: boolean;
   avatarColor?: string; // gradient bg styling
   isCaptain?: boolean;
+  image?: string; // base64 or URL player photo
 }
 
 interface PlayerCardProps {
@@ -44,7 +45,6 @@ export function PlayerCard({ player, positionLabel, onRemove, onClick }: PlayerC
   }
 
   // Populated state card
-  // Generate a nice gradient background based on avatarColor or team name
   const gradientBg = player.avatarColor || 'from-[#1e293b] to-[#0f172a]';
 
   return (
@@ -54,14 +54,22 @@ export function PlayerCard({ player, positionLabel, onRemove, onClick }: PlayerC
       {/* Background Graphic Gradient representing team colors */}
       <div className={`absolute inset-0 bg-gradient-to-br ${gradientBg} opacity-50 z-0`} />
       
-      {/* Abstract silhouette pattern or avatar to look like the player photo backdrop */}
-      <div className="absolute inset-x-0 bottom-4 top-2 flex items-end justify-center z-0 overflow-hidden">
-        <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-white/5 border border-white/10 flex items-center justify-center translate-y-2 group-hover:scale-105 transition-transform duration-300">
-          <span className="text-white/20 font-black text-2xl uppercase">
-            {player.name.substring(0, 2)}
-          </span>
+      {/* Render player photo if available, otherwise fallback to name initials */}
+      {player.image ? (
+        <img 
+          src={player.image} 
+          alt={player.name} 
+          className="absolute inset-0 w-full h-full object-cover z-10 brightness-95 group-hover:scale-[1.03] transition-transform duration-300"
+        />
+      ) : (
+        <div className="absolute inset-x-0 bottom-4 top-2 flex items-end justify-center z-0 overflow-hidden">
+          <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-white/5 border border-white/10 flex items-center justify-center translate-y-2 group-hover:scale-105 transition-transform duration-300">
+            <span className="text-white/20 font-black text-2xl uppercase">
+              {player.name.substring(0, 2)}
+            </span>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Top action row */}
       <div className="relative z-10 flex justify-between items-start w-full">
