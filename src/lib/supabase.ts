@@ -19,7 +19,7 @@ export const supabase = !isOfflineMode
       auth: {
         // Mock session state for testing Auth UI locally when offline
         getSession: async () => ({ data: { session: null }, error: null }),
-        onAuthStateChange: (callback: any) => {
+        onAuthStateChange: (_callback: any) => {
           // Allow simulated auth callbacks in mock mode
           return { data: { subscription: { unsubscribe: () => {} } } };
         },

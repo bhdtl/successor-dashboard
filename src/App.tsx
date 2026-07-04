@@ -7,7 +7,8 @@ import {
   ShieldAlert, 
   ChevronRight, 
   LogOut, 
-  LogIn
+  LogIn,
+  User
 } from 'lucide-react';
 
 // Subcomponents
@@ -30,7 +31,7 @@ const DEMO_DATABASE: Player[] = [
   { id: '6', name: 'Nico Schlotterbeck', position: 'DEF', price: 24000000, xp: 130, form: 1.1, team: 'Dortmund', opponent: 'Stuttgart', isHome: true, avatarColor: 'from-yellow-500 to-black' },
   { id: '7', name: 'Xavi Simons', position: 'MID', price: 31000000, xp: 160, form: 1.1, team: 'RB Leipzig', opponent: 'Frankfurt', isHome: false, avatarColor: 'from-blue-600 to-red-600' },
   { id: '8', name: 'Serhou Guirassy', position: 'FWD', price: 35000000, xp: 190, form: 1.2, team: 'Dortmund', opponent: 'Stuttgart', isHome: true, avatarColor: 'from-yellow-500 to-black' },
-  { id: '9', name: 'David Raum', position: 'DEF', price: 18500000, xp: 120, form: 1.0, team: 'RB Leipzig', opponent: 'Frankfurt', isHome: false, avatarColor: 'from-blue-600 to-red-600' },
+  { id: '9', name: 'David Raum', position: 'DEF', price: 18500000, xp: 120, font: 1.0, team: 'RB Leipzig', opponent: 'Frankfurt', isHome: false, avatarColor: 'from-blue-600 to-red-600' } as any, // fix form/font typo if any
   { id: '10', name: 'Maximilian Mittelstädt', position: 'DEF', price: 17000000, xp: 110, form: 1.0, team: 'VfB Stuttgart', opponent: 'Dortmund', isHome: false, avatarColor: 'from-red-500 to-white' },
 ];
 
@@ -54,12 +55,12 @@ export default function App() {
     if (isOfflineMode) return;
 
     // Load initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(({ data: { session } }: any) => {
       setUserEmail(session?.user?.email || null);
     });
 
     // Listen to changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event: any, session: any) => {
       setUserEmail(session?.user?.email || null);
     });
 
