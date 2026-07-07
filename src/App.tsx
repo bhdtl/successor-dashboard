@@ -8,7 +8,8 @@ import {
   ChevronRight, 
   LogOut, 
   LogIn,
-  User
+  User,
+  Calendar
 } from 'lucide-react';
 
 // Subcomponents
@@ -18,6 +19,7 @@ import { TransferHelper } from './components/TransferHelper';
 import { LineupPlanner } from './components/LineupPlanner';
 import { AdminCMS } from './components/AdminCMS';
 import { AuthModal } from './components/AuthModal';
+import { FixturePlanner } from './components/FixturePlanner';
 import type { Player } from './components/PlayerCard';
 import { supabase, isOfflineMode } from './lib/supabase';
 
@@ -36,7 +38,7 @@ const DEMO_DATABASE: Player[] = [
 ];
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'analytics' | 'transfer' | 'lineup' | 'admin'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'analytics' | 'transfer' | 'lineup' | 'planner' | 'admin'>('dashboard');
   
   // Database states
   const [dbPlayers, setDbPlayers] = useState<Player[]>([]);
@@ -382,6 +384,7 @@ export default function App() {
   const desktopTabs = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'analytics', label: 'Spieler-Analyse', icon: LineChart },
+    { id: 'planner', label: 'FDR-Planer', icon: Calendar },
     { id: 'transfer', label: 'Transfer-Helfer', icon: Zap },
     { id: 'lineup', label: 'Aufstellungs-Planer', icon: Users },
   ] as const;
@@ -523,6 +526,10 @@ export default function App() {
             <PlayerAnalysis players={dbPlayers} />
           )}
 
+          {activeTab === 'planner' && (
+            <FixturePlanner />
+          )}
+
           {activeTab === 'transfer' && (
             <TransferHelper players={dbPlayers} onAddToSquad={handleAddToSquad} squadIds={squadIds} />
           )}
@@ -564,6 +571,16 @@ export default function App() {
                 <div className={`ios-tab-content ${activeTab === 'analytics' ? 'ios-tab-active' : 'ios-tab-inactive'}`}>
                   <LineChart size={20} strokeWidth={activeTab === 'analytics' ? 2.5 : 1.8} />
                   <span className="ios-tab-label">Analyse</span>
+                </div>
+              </button>
+
+              <button
+                onClick={() => setActiveTab('planner')}
+                className="ios-tab-item"
+              >
+                <div className={`ios-tab-content ${activeTab === 'planner' ? 'ios-tab-active' : 'ios-tab-inactive'}`}>
+                  <Calendar size={20} strokeWidth={activeTab === 'planner' ? 2.5 : 1.8} />
+                  <span className="ios-tab-label">FDR</span>
                 </div>
               </button>
 
