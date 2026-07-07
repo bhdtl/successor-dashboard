@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { Player } from './PlayerCard';
 import { Shield, Plus, Trash2, Database, RefreshCw, Check, Upload, Calendar } from 'lucide-react';
+import { supabase, isOfflineMode } from '../lib/supabase';
 
 interface AdminCMSProps {
   players: Player[];
@@ -18,9 +19,10 @@ export function AdminCMS({ players, onAddPlayer, onDeletePlayer, onBulkAdd }: Ad
   const [team, setTeam] = useState('FC Bayern');
   const [avatarColor, setAvatarColor] = useState('from-red-600 to-black');
   
-  // Custom picture state
+  // Custom picture states
   const [image, setImage] = useState<string>('');
   const [imageName, setImageName] = useState('');
+  const [fileToUpload, setFileToUpload] = useState<File | null>(null);
 
   // Spielplan states
   const [spielplan, setSpielplan] = useState<any>(null);
@@ -29,11 +31,12 @@ export function AdminCMS({ players, onAddPlayer, onDeletePlayer, onBulkAdd }: Ad
   const [syncing, setSyncing] = useState(false);
   const [syncSuccess, setSyncSuccess] = useState(false);
 
-  // Convert uploaded image to base64 for offline storage
+  // Convert uploaded image to base64 for instant preview, keep reference to file for upload
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    setFileToUpload(file);
     setImageName(file.name);
     const reader = new FileReader();
     reader.onloadend = () => {
@@ -61,40 +64,111 @@ export function AdminCMS({ players, onAddPlayer, onDeletePlayer, onBulkAdd }: Ad
     reader.readAsText(file);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
 
-    const newPlayer: Player = {
-      id: 'custom-' + Date.now(),
-      name,
-      position,
-      price,
-      xp,
-      form,
-      team,
-      opponent: 'TBD', // determined automatically later
-      isHome: true,
-      avatarColor,
-      image // Base64 image
-    };
+    setSyncing(true);
+    let finalImageUrl = image; // Fallback to base64 string if offline
 
-    onAddPlayer(newPlayer);
-    
-    // Reset Form
-    setName('');
-    setXp(85);
-    setPrice(10000000);
-    setImage('');
-    setImageName('');
+    try {
+      // 1. If online and file selected, upload to Supabase Storage
+      if (!isOfflineMode && fileToUpload) {
+        const fileExt = fileToUpload.name.split('.').pop();
+        const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+        const filePath = `${fileName}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('player-images')
+          .upload(filePath, fileToUpload);
+
+        if (uploadError) throw uploadError;
+
+        // Retrieve public URL from bucket
+        const { data: urlData } = supabase.storage
+          .from('player-images')
+          .getPublicUrl(filePath);
+
+        finalImageUrl = urlData.publicUrl;
+      }
+
+      const newPlayer: Player = {
+        id: 'custom-' + Date.now(),
+        name,
+        position,
+        price,
+        xp,
+        form,
+        team,
+        opponent: 'TBD',
+        isHome: true,
+        avatarColor,
+        image: finalImageUrl
+      };
+
+      // 2. If online, insert player record in players table
+      if (!isOfflineMode) {
+        const { error: dbError } = await supabase
+          .from('players')
+          .insert({
+            id: newPlayer.id,
+            name: newPlayer.name,
+            position: newPlayer.position,
+            price: newPlayer.price,
+            xp: newPlayer.xp,
+            form: newPlayer.form,
+            team: newPlayer.team,
+            opponent: newPlayer.opponent,
+            is_home: newPlayer.isHome,
+            avatar_color: newPlayer.avatarColor,
+            image: newPlayer.image
+          });
+
+        if (dbError) throw dbError;
+      }
+
+      onAddPlayer(newPlayer);
+      
+      // Reset Form
+      setName('');
+      setXp(85);
+      setPrice(10000000);
+      setImage('');
+      setImageName('');
+      setFileToUpload(null);
+    } catch (err: any) {
+      alert('Fehler beim Speichern: ' + err.message);
+    } finally {
+      setSyncing(false);
+    }
+  };
+
+  const handleDelete = async (playerId: string) => {
+    if (!confirm('Möchtest du diesen Spieler wirklich aus der Datenbank löschen?')) return;
+
+    if (!isOfflineMode) {
+      try {
+        const { error } = await supabase
+          .from('players')
+          .delete()
+          .eq('id', playerId);
+
+        if (error) throw error;
+      } catch (err: any) {
+        alert('Fehler beim Löschen: ' + err.message);
+        return;
+      }
+    }
+
+    onDeletePlayer(playerId);
   };
 
   // Mock scraper to simulate scraping Transfermarkt
-  const handleScrapeTransfermarkt = () => {
+  const handleScrapeTransfermarkt = async () => {
     setSyncing(true);
     setSyncSuccess(false);
 
-    setTimeout(() => {
+    try {
       const scraped: Player[] = [
         { id: 'tm-1', name: 'Florian Wirtz', position: 'MID', price: 42000000, xp: 215, form: 1.4, team: 'Bayer Leverkusen', opponent: 'FC Bayern', isHome: false, avatarColor: 'from-red-600 to-black' },
         { id: 'tm-2', name: 'Jamal Musiala', position: 'MID', price: 39500000, xp: 195, form: 1.3, team: 'FC Bayern', opponent: 'Leverkusen', isHome: true, avatarColor: 'from-red-600 to-red-950' },
@@ -105,12 +179,38 @@ export function AdminCMS({ players, onAddPlayer, onDeletePlayer, onBulkAdd }: Ad
         { id: 'tm-7', name: 'Xavi Simons', position: 'MID', price: 31000000, xp: 160, form: 1.1, team: 'RB Leipzig', opponent: 'Frankfurt', isHome: false, avatarColor: 'from-blue-600 to-red-600' },
       ];
 
+      if (!isOfflineMode) {
+        // Bulk insert to Supabase database (overwrite on conflict or skip duplicates)
+        // Convert to database snake_case keys
+        const dbRows = scraped.map(p => ({
+          id: p.id,
+          name: p.name,
+          position: p.position,
+          price: p.price,
+          xp: p.xp,
+          form: p.form,
+          team: p.team,
+          opponent: p.opponent,
+          is_home: p.isHome,
+          avatar_color: p.avatarColor,
+          image: p.image
+        }));
+
+        const { error } = await supabase
+          .from('players')
+          .upsert(dbRows, { onConflict: 'id' });
+
+        if (error) throw error;
+      }
+
       onBulkAdd(scraped);
-      setSyncing(false);
       setSyncSuccess(true);
-      
       setTimeout(() => setSyncSuccess(false), 3000);
-    }, 1500);
+    } catch (err: any) {
+      alert('Scraper Sync Fehler: ' + err.message);
+    } finally {
+      setSyncing(false);
+    }
   };
 
   return (
@@ -259,12 +359,12 @@ export function AdminCMS({ players, onAddPlayer, onDeletePlayer, onBulkAdd }: Ad
 
             <button type="submit" className="w-full btn-mint py-2.5 flex items-center justify-center gap-2">
               <Plus size={14} />
-              <span>Spieler anlegen</span>
+              <span>{syncing ? 'Verarbeite...' : 'Spieler anlegen'}</span>
             </button>
           </form>
         </div>
 
-        {/* SPIELPLAN UPLOAD & LIST (2/3 width) */}
+        {/* SPIELPLAN UPLOAD & LIST */}
         <div className="lg:col-span-2 space-y-6">
           
           {/* Spielplan-Modul */}
@@ -346,7 +446,7 @@ export function AdminCMS({ players, onAddPlayer, onDeletePlayer, onBulkAdd }: Ad
                         {(player.price / 1000000).toFixed(1)}M €
                       </div>
                       <button
-                        onClick={() => onDeletePlayer(player.id)}
+                        onClick={() => handleDelete(player.id)}
                         className="p-1.5 bg-red-950/20 border border-red-900/30 rounded-lg text-red-400 hover:text-white hover:bg-red-600 transition-colors"
                         title="Spieler löschen"
                       >

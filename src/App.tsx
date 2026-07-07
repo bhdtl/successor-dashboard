@@ -31,14 +31,14 @@ const DEMO_DATABASE: Player[] = [
   { id: '6', name: 'Nico Schlotterbeck', position: 'DEF', price: 24000000, xp: 130, form: 1.1, team: 'Dortmund', opponent: 'Stuttgart', isHome: true, avatarColor: 'from-yellow-500 to-black' },
   { id: '7', name: 'Xavi Simons', position: 'MID', price: 31000000, xp: 160, form: 1.1, team: 'RB Leipzig', opponent: 'Frankfurt', isHome: false, avatarColor: 'from-blue-600 to-red-600' },
   { id: '8', name: 'Serhou Guirassy', position: 'FWD', price: 35000000, xp: 190, form: 1.2, team: 'Dortmund', opponent: 'Stuttgart', isHome: true, avatarColor: 'from-yellow-500 to-black' },
-  { id: '9', name: 'David Raum', position: 'DEF', price: 18500000, xp: 120, font: 1.0, team: 'RB Leipzig', opponent: 'Frankfurt', isHome: false, avatarColor: 'from-blue-600 to-red-600' } as any, // fix form/font typo if any
+  { id: '9', name: 'David Raum', position: 'DEF', price: 18500000, xp: 120, form: 1.0, team: 'RB Leipzig', opponent: 'Frankfurt', isHome: false, avatarColor: 'from-blue-600 to-red-600' },
   { id: '10', name: 'Maximilian Mittelstädt', position: 'DEF', price: 17000000, xp: 110, form: 1.0, team: 'VfB Stuttgart', opponent: 'Dortmund', isHome: false, avatarColor: 'from-red-500 to-white' },
 ];
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'analytics' | 'transfer' | 'lineup' | 'admin'>('dashboard');
   
-  // Database starts completely clean (at 0)
+  // Database states
   const [dbPlayers, setDbPlayers] = useState<Player[]>([]);
   const [squad, setSquad] = useState<Player[]>([]);
   const [lineup, setLineup] = useState<(Player | undefined)[]>(Array(11).fill(undefined));
@@ -50,18 +50,98 @@ export default function App() {
 
   const isAdmin = userEmail === 'bh.dtl@web.de';
 
+  // Helper to map DB row keys to Player interface camelCase
+  const mapDbToPlayer = (row: any): Player => ({
+    id: row.id,
+    name: row.name,
+    position: row.position,
+    price: Number(row.price),
+    xp: row.xp,
+    form: Number(row.form),
+    team: row.team,
+    opponent: row.opponent || 'TBD',
+    isHome: row.is_home,
+    avatarColor: row.avatar_color,
+    image: row.image || undefined
+  });
+
+  // Fetch players, squad, and lineup from Supabase
+  const syncSupabaseData = async (userEmailStr: string | null) => {
+    if (isOfflineMode || !userEmailStr) {
+      setDbPlayers([]);
+      setSquad([]);
+      setLineup(Array(11).fill(undefined));
+      setBudget(50000000);
+      return;
+    }
+
+    try {
+      // 1. Fetch Players Database
+      const { data: playersData, error: playersErr } = await supabase
+        .from('players')
+        .select('*')
+        .order('xp', { ascending: false });
+
+      if (playersErr) throw playersErr;
+      const mappedPlayers: Player[] = (playersData || []).map(mapDbToPlayer);
+      setDbPlayers(mappedPlayers);
+
+      // Get authenticated user ID
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // 2. Fetch User's Squad
+      const { data: squadData, error: squadErr } = await supabase
+        .from('squad_players')
+        .select('player_id')
+        .eq('user_id', user.id);
+
+      if (squadErr) throw squadErr;
+      const squadIds = new Set((squadData || []).map((row: any) => row.player_id));
+      const userSquad = mappedPlayers.filter((p: Player) => squadIds.has(p.id));
+      setSquad(userSquad);
+
+      // Compute budget dynamically
+      const squadCost = userSquad.reduce((sum: number, p: Player) => sum + p.price, 0);
+      setBudget(50000000 - squadCost);
+
+      // 3. Fetch User's Lineup slots
+      const { data: lineupData, error: lineupErr } = await supabase
+        .from('lineups')
+        .select('slot_index, player_id')
+        .eq('user_id', user.id);
+
+      if (lineupErr) throw lineupErr;
+      const userLineup = Array(11).fill(undefined);
+      (lineupData || []).forEach((row: any) => {
+        const found = mappedPlayers.find((p: Player) => p.id === row.player_id);
+        if (found && row.slot_index >= 0 && row.slot_index <= 10) {
+          userLineup[row.slot_index] = found;
+        }
+      });
+      setLineup(userLineup);
+
+    } catch (err: any) {
+      console.error('Fehler beim Laden von Supabase-Daten:', err.message);
+    }
+  };
+
   // 1. Supabase Auth Session listener
   useEffect(() => {
     if (isOfflineMode) return;
 
     // Load initial session
     supabase.auth.getSession().then(({ data: { session } }: any) => {
-      setUserEmail(session?.user?.email || null);
+      const email = session?.user?.email || null;
+      setUserEmail(email);
+      syncSupabaseData(email);
     });
 
     // Listen to changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event: any, session: any) => {
-      setUserEmail(session?.user?.email || null);
+      const email = session?.user?.email || null;
+      setUserEmail(email);
+      syncSupabaseData(email);
     });
 
     return () => subscription.unsubscribe();
@@ -74,8 +154,63 @@ export default function App() {
     }
   }, [userEmail, activeTab, isAdmin]);
 
-  // Handler to load demo data
-  const handleLoadDemoData = () => {
+  // Handler to load demo data (works in offline or online)
+  const handleLoadDemoData = async () => {
+    if (!isOfflineMode) {
+      try {
+        // Bulk insert/upsert to Supabase
+        const dbRows = DEMO_DATABASE.map(p => ({
+          id: p.id,
+          name: p.name,
+          position: p.position,
+          price: p.price,
+          xp: p.xp,
+          form: p.form,
+          team: p.team,
+          opponent: p.opponent,
+          is_home: p.isHome,
+          avatar_color: p.avatarColor,
+          image: p.image
+        }));
+
+        const { error } = await supabase
+          .from('players')
+          .upsert(dbRows, { onConflict: 'id' });
+
+        if (error) throw error;
+
+        // Auto-add some to squad in Supabase
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const squadRows = [DEMO_DATABASE[0], DEMO_DATABASE[1], DEMO_DATABASE[3], DEMO_DATABASE[4], DEMO_DATABASE[5]].map(p => ({
+            user_id: user.id,
+            player_id: p.id
+          }));
+
+          await supabase.from('squad_players').upsert(squadRows);
+
+          // Add slots to lineup in Supabase
+          const lineupRows = [
+            { user_id: user.id, slot_index: 0, player_id: DEMO_DATABASE[4].id }, // Kobel
+            { user_id: user.id, slot_index: 1, player_id: DEMO_DATABASE[3].id }, // Grimaldo
+            { user_id: user.id, slot_index: 2, player_id: DEMO_DATABASE[5].id }, // Schlotterbeck
+            { user_id: user.id, slot_index: 5, player_id: DEMO_DATABASE[0].id }, // Wirtz
+            { user_id: user.id, slot_index: 6, player_id: DEMO_DATABASE[1].id }, // Musiala
+          ];
+
+          await supabase.from('lineups').upsert(lineupRows);
+        }
+
+        // Re-sync
+        await syncSupabaseData(userEmail);
+        return;
+      } catch (err: any) {
+        alert('Fehler beim Laden der Demodaten in Supabase: ' + err.message);
+        return;
+      }
+    }
+
+    // Local offline state preloading
     setDbPlayers(DEMO_DATABASE);
     setSquad([
       DEMO_DATABASE[0], // Wirtz
@@ -97,31 +232,110 @@ export default function App() {
       undefined,
       undefined,
     ]);
-    setBudget(31500000); // Remaining cash from demo squad
+    setBudget(31500000);
   };
 
   // Handler to buy/add player to squad
-  const handleAddToSquad = (player: Player) => {
+  const handleAddToSquad = async (player: Player) => {
     if (squad.some(p => p.id === player.id)) return;
     if (budget < player.price) {
       alert("Nicht genügend Budget!");
       return;
     }
-    setSquad([...squad, player]);
+
+    if (!isOfflineMode) {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+
+        const { error } = await supabase
+          .from('squad_players')
+          .insert({
+            user_id: user.id,
+            player_id: player.id
+          });
+
+        if (error) throw error;
+      } catch (err: any) {
+        alert('Kauf fehlgeschlagen: ' + err.message);
+        return;
+      }
+    }
+
+    const updatedSquad = [...squad, player];
+    setSquad(updatedSquad);
     setBudget(budget - player.price);
   };
 
   // Handler to remove player from squad (and lineup)
-  const handleRemoveFromSquad = (playerId: string) => {
+  const handleRemoveFromSquad = async (playerId: string) => {
     const player = squad.find(p => p.id === playerId);
     if (!player) return;
+
+    if (!isOfflineMode) {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+
+        // Will cascade delete from lineup table via FK constraints
+        const { error } = await supabase
+          .from('squad_players')
+          .delete()
+          .eq('user_id', user.id)
+          .eq('player_id', playerId);
+
+        if (error) throw error;
+      } catch (err: any) {
+        alert('Verkauf fehlgeschlagen: ' + err.message);
+        return;
+      }
+    }
 
     setSquad(squad.filter(p => p.id !== playerId));
     setLineup(lineup.map(p => p?.id === playerId ? undefined : p));
     setBudget(budget + player.price);
   };
 
-  // Admin handlers
+  // Intercept lineup planning changes and persist to Supabase
+  const handleUpdateLineup = async (newLineup: (Player | undefined)[]) => {
+    setLineup(newLineup);
+
+    if (isOfflineMode) return;
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // 1. Clear current lineup mappings
+      const { error: clearError } = await supabase
+        .from('lineups')
+        .delete()
+        .eq('user_id', user.id);
+
+      if (clearError) throw clearError;
+
+      // 2. Insert new lineup slot assignments
+      const insertRows = newLineup
+        .map((player, slotIdx) => player ? {
+          user_id: user.id,
+          slot_index: slotIdx,
+          player_id: player.id
+        } : null)
+        .filter(Boolean);
+
+      if (insertRows.length > 0) {
+        const { error: insertError } = await supabase
+          .from('lineups')
+          .insert(insertRows);
+
+        if (insertError) throw insertError;
+      }
+    } catch (err: any) {
+      console.error('Fehler beim Speichern der Aufstellung:', err.message);
+    }
+  };
+
+  // Admin handlers (keep states synced locally for instant UI response)
   const handleAddPlayerToDb = (newPlayer: Player) => {
     setDbPlayers([newPlayer, ...dbPlayers]);
   };
@@ -141,6 +355,7 @@ export default function App() {
 
   const handleLoginSuccess = (email: string) => {
     setUserEmail(email);
+    syncSupabaseData(email);
   };
 
   const handleLogout = async () => {
@@ -149,6 +364,7 @@ export default function App() {
     }
     setUserEmail(null);
     setActiveTab('dashboard');
+    syncSupabaseData(null);
   };
 
   const squadIds = new Set(squad.map(p => p.id));
@@ -312,7 +528,7 @@ export default function App() {
           )}
 
           {activeTab === 'lineup' && (
-            <LineupPlanner squad={squad} lineup={lineup} onUpdateLineup={setLineup} />
+            <LineupPlanner squad={squad} lineup={lineup} onUpdateLineup={handleUpdateLineup} />
           )}
 
           {activeTab === 'admin' && isAdmin && (
