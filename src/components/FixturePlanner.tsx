@@ -288,11 +288,16 @@ export function FixturePlanner() {
     }
   };
 
-  // Helper to calculate fixture difficulty dynamically
+  // Calculate FDR directly from the match odds (implied win probability)
   const calcFdr = (fixture: TeamFixture) => {
-    // Basic FDR formula: Opponent Strength + (isHome ? -0.5 : 0.5), bounded between 1-5
-    const rawFdr = fixture.baseDifficulty + (fixture.isHome ? -0.5 : 0.5);
-    return Math.max(1, Math.min(5, Math.round(rawFdr)));
+    const odds = fixture.isHome ? fixture.mockOdds.home : fixture.mockOdds.away;
+    const winProb = 1 / odds;
+
+    if (winProb >= 0.65) return 1; // Easiest (odds <= 1.54)
+    if (winProb >= 0.48) return 2; // Easy (1.54 < odds <= 2.08)
+    if (winProb >= 0.32) return 3; // Medium (2.08 < odds <= 3.12)
+    if (winProb >= 0.18) return 4; // Hard (3.12 < odds <= 5.55)
+    return 5; // Very Hard (odds > 5.55)
   };
 
   // Calculate average difficulty run for next 5 matches
@@ -339,32 +344,23 @@ export function FixturePlanner() {
     setSyncSuccess(false);
 
     setTimeout(() => {
-      // Slightly alter the base difficulties based on simulated odds shifts
+      // Slightly alter the match win odds based on simulated bookmaker shifts
       const updated = teams.map(team => {
         const updatedFixtures = team.fixtures.map(fix => {
-          // Simulate win probability shift
-          const winProbShift = Math.random() * 0.15 - 0.075;
-          const originalWinProb = 1 / (fix.isHome ? fix.mockOdds.home : fix.mockOdds.away);
-          const newWinProb = Math.max(0.1, Math.min(0.9, originalWinProb + winProbShift));
-          
-          // Recalculate odds based on shifted probability
-          const rawOdds = 1 / newWinProb;
-          const mockOdds = {
-            home: fix.isHome ? Number(rawOdds.toFixed(2)) : Number((rawOdds * 2.5).toFixed(2)),
-            draw: Number((3.1 + Math.random()).toFixed(2)),
-            away: fix.isHome ? Number((rawOdds * 2.5).toFixed(2)) : Number(rawOdds.toFixed(2))
-          };
+          // Win odds shifts
+          const oddsShift = (Math.random() * 0.4 - 0.2) * (fix.isHome ? fix.mockOdds.home : fix.mockOdds.away);
+          const currentWinOdds = fix.isHome ? fix.mockOdds.home : fix.mockOdds.away;
+          const newWinOdds = Math.max(1.1, currentWinOdds + oddsShift);
 
-          // Adjust baseDifficulty relative to new win probability
-          // Higher win probability -> Easiest FDR
-          let newBaseDifficulty = fix.baseDifficulty;
-          if (newWinProb > 0.6) newBaseDifficulty = Math.max(1, fix.baseDifficulty - 1);
-          else if (newWinProb < 0.25) newBaseDifficulty = Math.min(5, fix.baseDifficulty + 1);
+          const mockOdds = {
+            home: fix.isHome ? Number(newWinOdds.toFixed(2)) : Number((newWinOdds * 2.5).toFixed(2)),
+            draw: Number((2.8 + Math.random() * 1.5).toFixed(2)),
+            away: fix.isHome ? Number((newWinOdds * 2.5).toFixed(2)) : Number(newWinOdds.toFixed(2))
+          };
 
           return {
             ...fix,
-            mockOdds,
-            baseDifficulty: newBaseDifficulty
+            mockOdds
           };
         });
 
@@ -545,7 +541,7 @@ export function FixturePlanner() {
         <div className="p-4 border-b border-white/[0.06] flex items-center justify-between">
           <div>
             <h2 className="text-sm font-black uppercase tracking-wider text-white">Spielplan-Stärke (FDR-Matrix)</h2>
-            <span className="text-[10px] text-successor-textMuted font-mono">Durchschnittliche Stärke der ersten 5 Gegner</span>
+            <span className="text-[10px] text-successor-textMuted font-mono">FDR berechnet direkt aus implizierten NEO.bet Match-Siegquoten</span>
           </div>
           
           <div className="flex gap-2.5 items-center text-[9px] font-mono text-gray-500">
