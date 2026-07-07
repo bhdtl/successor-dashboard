@@ -383,19 +383,16 @@ export function FixturePlanner() {
   const [teamAIdx, setTeamAIdx] = useState<number>(0);
   const [teamBIdx, setTeamBIdx] = useState<number>(10);
 
-  // Purely static FDR calculation based on team strength adjusted by home/away factor
+  // Purely static FDR calculation
   const calcFdr = (fixture: TeamFixture) => {
     const oppStrength = TEAM_STRENGTHS[fixture.opponentAbbr] || 3;
     if (fixture.isHome) {
-      // Home games are easier
       return Math.max(1, oppStrength - 1);
     } else {
-      // Away games reflect full opponent strength (up to 5)
       return Math.min(5, oppStrength);
     }
   };
 
-  // Helper to map difficulty number to styled color badges
   const getDifficultyColor = (fdr: number) => {
     switch (fdr) {
       case 1:
@@ -412,6 +409,22 @@ export function FixturePlanner() {
     }
   };
 
+  const getDifficultyDotColor = (fdr: number) => {
+    switch (fdr) {
+      case 1:
+        return 'bg-[#00ff88]';
+      case 2:
+        return 'bg-emerald-500';
+      case 3:
+        return 'bg-gray-500';
+      case 4:
+        return 'bg-orange-400';
+      case 5:
+      default:
+        return 'bg-red-500';
+    }
+  };
+
   const getAverageFdr = (team: TeamData) => {
     const targetFixtures = gwRange === '1-5' ? team.fixtures.slice(0, 5) : team.fixtures.slice(5, 10);
     const sum = targetFixtures.reduce((total, fix) => total + calcFdr(fix), 0);
@@ -425,7 +438,7 @@ export function FixturePlanner() {
   const easiestTeams = sortedTeamsByAvgFdr.slice(0, 3);
   const hardestTeams = sortedTeamsByAvgFdr.slice(-3).reverse();
 
-  // Rotation score calculation (static FDR comparison)
+  // Rotation score
   const calculateRotationScore = (tA: TeamData, tB: TeamData) => {
     let perfectRotations = 0;
     const startIndex = gwRange === '1-5' ? 0 : 5;
@@ -449,121 +462,141 @@ export function FixturePlanner() {
 
   const activeTeam = teams[selectedTeamIdx];
   const activeFixtures = gwRange === '1-5' ? activeTeam.fixtures.slice(0, 5) : activeTeam.fixtures.slice(5, 10);
+  const avgFdrVal = Number(getAverageFdr(activeTeam));
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-3 duration-300 select-none">
       
       {/* HEADER SECTION */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-        <div className="flex items-center gap-3">
-          <img src={BUNDESLIGA_LOGO} alt="Bundesliga Logo" className="h-9 w-9 object-contain opacity-80" />
-          <div>
-            <h1 className="text-2xl font-black uppercase tracking-wider text-white">FDR &amp; Fixture-Planer</h1>
-            <p className="text-xs text-successor-textMuted font-mono">Fixture Difficulty Rating &amp; Goalie Rotation Optimizer</p>
-          </div>
+        <div className="flex items-center gap-2">
+          <img src={BUNDESLIGA_LOGO} alt="" className="h-6 w-6 object-contain opacity-80" />
+          <h1 className="text-lg font-black uppercase tracking-wider text-white">Spielplan &amp; FDR Matrix</h1>
         </div>
-      </div>
 
-      {/* PAGER / RANGE SELECTOR */}
-      <div className="flex justify-between items-center bg-[#13151a] p-1.5 border border-white/[0.04] rounded-2xl">
-        <span className="text-[10px] font-black uppercase text-successor-textMuted px-3 font-mono">Spieltage auswählen</span>
-        
-        <div className="flex gap-1">
+        {/* Range selectors */}
+        <div className="flex gap-1 bg-[#13151a] p-1 border border-white/[0.04] rounded-xl">
           <button
             onClick={() => setGwRange('1-5')}
-            className={`px-4 py-1.5 rounded-xl text-xs font-black transition-all ${gwRange === '1-5' ? 'bg-white text-black shadow-lg' : 'text-gray-400 hover:text-white'}`}
+            className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all ${gwRange === '1-5' ? 'bg-white text-black shadow-lg' : 'text-gray-400 hover:text-white'}`}
           >
             Spieltage 1 - 5
           </button>
           <button
             onClick={() => setGwRange('6-10')}
-            className={`px-4 py-1.5 rounded-xl text-xs font-black transition-all ${gwRange === '6-10' ? 'bg-white text-black shadow-lg' : 'text-gray-400 hover:text-white'}`}
+            className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all ${gwRange === '6-10' ? 'bg-white text-black shadow-lg' : 'text-gray-400 hover:text-white'}`}
           >
             Spieltage 6 - 10
           </button>
         </div>
       </div>
 
-      {/* DEDICATED CLUB SELECTOR & RUN DASHBOARD */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      {/* SOFASCORE-STYLE PREMIUM TIMELINE CHART CARD */}
+      <div className="glass-card rounded-2xl p-5 space-y-6 border border-white/[0.04]">
         
-        {/* CLUB SELECTOR DASHBOARD */}
-        <div className="lg:col-span-2 glass-card rounded-2xl p-5 space-y-5 flex flex-col justify-between">
-          <div className="space-y-4">
-            <div className="flex justify-between items-start border-b border-white/[0.05] pb-3">
-              <div>
-                <h2 className="text-sm font-black uppercase tracking-wider text-white">Club-Spielplan-Check</h2>
-                <p className="text-[10px] text-successor-textMuted font-mono">Filtere nach Verein, um die genaue FDR-Kurve einzusehen</p>
-              </div>
+        {/* Top selector & average badge */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 pb-3 border-b border-white/[0.04]">
+          <div className="flex items-center gap-3">
+            <span className="text-[10px] font-black uppercase tracking-widest text-successor-textMuted font-mono">
+              FDR-Trendverlauf
+            </span>
+            <div className="relative flex items-center">
+              <img src={TEAM_LOGOS[activeTeam.abbr]} alt="" className="absolute left-3 w-5 h-5 object-contain pointer-events-none" />
+              <select
+                value={selectedTeamIdx}
+                onChange={e => setSelectedTeamIdx(Number(e.target.value))}
+                className="bg-[#0d0e10]/90 border border-white/[0.06] rounded-xl py-2 pl-10 pr-8 text-xs font-black text-white focus:border-successor-mint/45 focus:outline-none cursor-pointer hover:bg-black transition-all"
+              >
+                {teams.map((t, idx) => (
+                  <option key={t.abbr} value={idx}>{t.name}</option>
+                ))}
+              </select>
+            </div>
+          </div>
 
-              {/* Selector Dropdown */}
-              <div className="relative flex items-center">
-                <img src={TEAM_LOGOS[activeTeam.abbr]} alt="" className="absolute left-3 w-5.5 h-5.5 object-contain pointer-events-none" />
-                <select
-                  value={selectedTeamIdx}
-                  onChange={e => setSelectedTeamIdx(Number(e.target.value))}
-                  className="bg-[#0d0e10] border border-white/[0.06] rounded-xl py-2 pl-10 pr-8 text-xs font-black text-white focus:border-successor-mint/45 focus:outline-none cursor-pointer"
-                >
-                  {teams.map((t, idx) => (
-                    <option key={t.abbr} value={idx}>{t.name}</option>
-                  ))}
-                </select>
-              </div>
+          {/* Average Rating indicator (Right aligned, Sofascore style badge) */}
+          <div className="flex items-center gap-2">
+            <span className="text-[10.5px] text-successor-textMuted font-mono uppercase tracking-wider">Durchschn. FDR-Wert:</span>
+            <div className="flex items-center gap-1.5 bg-[#00ff88]/10 border border-[#00ff88]/20 px-2.5 py-1 rounded-lg">
+              <span className="w-2.5 h-2.5 rounded-sm bg-[#00ff88] shadow-[0_0_8px_rgba(0,255,136,0.5)]"></span>
+              <span className="text-xs font-black font-mono text-white">{avgFdrVal.toFixed(2)}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Interactive Custom SVG Trend Chart */}
+        <div className="relative pt-8 pb-4">
+          
+          {/* Timeline chart wrapper */}
+          <div className="relative w-full h-40">
+            
+            {/* The Horizontal baseline (Average FDR line) */}
+            <div className="absolute top-[80px] left-0 right-0 h-[1.5px] bg-[#00ff88]/30 border-dashed border-t border-[#00ff88]/40 flex items-center justify-end pr-2 z-0">
+              <span className="text-[7.5px] font-mono text-[#00ff88] uppercase bg-[#181a20] px-1 translate-y-[-1px]">
+                Schnitt ({avgFdrVal.toFixed(1)})
+              </span>
             </div>
 
-            {/* Selected Club Metrics */}
-            <div className="flex items-center gap-4 bg-[#0d0e10]/40 border border-white/[0.04] p-4 rounded-2xl">
-              <img src={TEAM_LOGOS[activeTeam.abbr]} alt="" className="w-10 h-10 object-contain" />
-              <div>
-                <div className="text-sm font-black text-white">{activeTeam.name}</div>
-                <div className="flex items-center gap-3 mt-1.5 text-[9.5px] font-mono text-successor-textMuted uppercase">
-                  <span>Schnitt (Sptg. {gwRange}): <strong className="text-successor-mint">{getAverageFdr(activeTeam)} FDR</strong></span>
-                </div>
-              </div>
-            </div>
-
-            {/* Visual Fixture Timeline */}
-            <div className="grid grid-cols-1 sm:grid-cols-5 gap-3.5 pt-2">
+            {/* Render Nodes along the line */}
+            <div className="absolute inset-0 flex justify-between px-[10%] z-10">
               {activeFixtures.map((fixture, index) => {
                 const fIdx = gwRange === '1-5' ? index : index + 5;
                 const fdr = calcFdr(fixture);
 
+                // Y placement formula: Easy (FDR 1,2) goes ABOVE the average line, Hard (FDR 4,5) goes BELOW the average line.
+                // Normal FDR is 1 to 5. Baseline (avgFdrVal) is centered.
+                // Let's define offset: if fdr < avgFdrVal (easier), value is positive (shifts UP).
+                // Offset is pixel-shifted: (avgFdrVal - fdr) * 26.
+                const diffFromAvg = avgFdrVal - fdr;
+                const yOffset = diffFromAvg * 28; // Up to 56px shift up/down
+                const nodeTop = 80 - yOffset - 16; // 16px is half node height
+
                 return (
-                  <div key={index} className="bg-[#0d0e10]/60 border border-white/[0.04] p-3 rounded-2xl flex flex-col justify-between h-30 relative group/timeline hover:border-white/10 transition-all">
-                    <div className="flex justify-between items-start">
-                      <span className="text-[8px] font-mono font-bold text-gray-500 uppercase font-black">GW {fIdx + 1}</span>
-                      <span className={`text-[8px] px-1.5 py-0.5 rounded font-black font-mono uppercase ${getDifficultyColor(fdr)}`}>
-                        FDR {fdr}
+                  <div 
+                    key={index} 
+                    className="relative flex flex-col items-center group/trend"
+                    style={{ transform: `translateY(${yOffset * -1}px)`, marginTop: '80px' }}
+                  >
+                    
+                    {/* Upper label: Date & opponent flag (all small standardized circular flag) */}
+                    <div className="absolute bottom-6 flex flex-col items-center gap-1 opacity-90 group-hover/trend:opacity-100 transition-opacity">
+                      <span className="text-[8px] font-mono text-gray-500 whitespace-nowrap">{fixture.date}</span>
+                      <div className="w-5.5 h-5.5 rounded-full overflow-hidden border border-white/10 bg-[#0d0e10]/80 p-0.5 flex items-center justify-center">
+                        <img src={TEAM_LOGOS[fixture.opponentAbbr]} alt="" className="w-full h-full object-contain" />
+                      </div>
+                    </div>
+
+                    {/* Node rating badge (circular / round-square Sofascore rating format) */}
+                    <div 
+                      className={`w-6 h-6 rounded-md flex items-center justify-center text-[10px] font-black text-white font-mono shadow-xl transition-transform duration-200 hover:scale-115 cursor-help ${
+                        fdr <= 2 ? 'bg-emerald-500' : fdr === 3 ? 'bg-gray-600' : fdr === 4 ? 'bg-orange-500' : 'bg-red-500'
+                      }`}
+                    >
+                      {fdr}
+                    </div>
+
+                    {/* Lower Label: Opponent Name (Uniform small text format) */}
+                    <div className="absolute top-7 flex flex-col items-center">
+                      <span className="text-[10px] font-black text-white uppercase tracking-wider">{fixture.opponentAbbr}</span>
+                      <span className="text-[7.5px] font-mono text-successor-textMuted uppercase whitespace-nowrap">
+                        {fixture.isHome ? 'Heim' : 'Auswärts'}
                       </span>
                     </div>
 
-                    <div className="flex items-center gap-2 my-2">
-                      <img src={TEAM_LOGOS[fixture.opponentAbbr]} alt="" className="w-5.5 h-5.5 object-contain" />
-                      <div className="overflow-hidden">
-                        <div className="text-xs font-black text-white truncate">{fixture.opponentAbbr}</div>
-                        <span className="text-[8.5px] font-mono text-successor-textMuted block lowercase">
-                          {fixture.isHome ? 'Heimspiel' : 'Auswärts'}
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Tooltip on timeline cell */}
-                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-40 bg-[#121316] border border-white/[0.08] rounded-xl p-3 shadow-2xl z-45 opacity-0 pointer-events-none group-hover/timeline:opacity-100 transition-opacity duration-200">
-                      <div className="text-[9px] font-black text-successor-mint uppercase tracking-wider mb-1.5 border-b border-white/[0.04] pb-1">
-                        Spiel-Info
+                    {/* Tooltip detail card */}
+                    <div className="absolute bottom-14 left-1/2 -translate-x-1/2 w-36 bg-[#121316] border border-white/[0.08] rounded-xl p-3 shadow-2xl z-50 opacity-0 pointer-events-none group-hover/trend:opacity-100 transition-opacity duration-200">
+                      <div className="text-[9px] font-black text-successor-mint uppercase mb-1.5 border-b border-white/[0.04] pb-1">
+                        Spieltag GW {fIdx + 1}
                       </div>
                       <div className="space-y-1 font-mono text-[8.5px] text-gray-300">
-                        <div className="flex justify-between">
-                          <span>Gegner:</span>
-                          <span className="text-white truncate font-bold">{fixture.opponent}</span>
-                        </div>
+                        <div className="text-white truncate font-bold">{fixture.opponent}</div>
                         <div className="flex justify-between">
                           <span>Ort:</span>
-                          <span className="text-white font-bold">{fixture.isHome ? 'Heimspiel' : 'Auswärts'}</span>
+                          <span className="text-white">{fixture.isHome ? 'Heimspiel' : 'Auswärts'}</span>
                         </div>
                         <div className="flex justify-between">
-                          <span>Datum:</span>
-                          <span className="text-white font-bold">{fixture.date}</span>
+                          <span>FDR:</span>
+                          <span className="text-white font-bold">{fdr} / 5</span>
                         </div>
                       </div>
                     </div>
@@ -572,116 +605,130 @@ export function FixturePlanner() {
                 );
               })}
             </div>
-          </div>
-        </div>
 
-        {/* Easiest/Hardest Runs */}
-        <div className="space-y-4">
-          {/* Card 1: Easiest Runs */}
-          <div className="glass-card rounded-2xl p-4.5 border-l-2 border-l-successor-mint">
-            <div className="flex justify-between items-center mb-3">
-              <h2 className="text-xs font-black uppercase tracking-wider text-white flex items-center gap-2">
-                <Sparkles size={13} className="text-successor-mint" />
-                Bester Run (Sptg. {gwRange})
-              </h2>
-              <span className="text-[8.5px] font-mono text-successor-mint bg-successor-mint/10 px-1.5 py-0.5 rounded">Einfach</span>
+            {/* Visual connector lines / background bar graph indicator on the far right */}
+            <div className="absolute right-0 top-6 bottom-6 w-1 rounded-full overflow-hidden flex flex-col z-0">
+              <div className="flex-1 bg-red-500"></div>
+              <div className="flex-1 bg-orange-500"></div>
+              <div className="flex-1 bg-gray-600"></div>
+              <div className="flex-1 bg-emerald-500"></div>
+              <div className="flex-1 bg-[#00ff88]"></div>
             </div>
-            <div className="space-y-2.5">
-              {easiestTeams.map((team, idx) => (
-                <div key={team.abbr} className="flex justify-between items-center text-xs py-0.5 border-b border-white/[0.02] last:border-0">
-                  <div className="flex items-center gap-2.5">
-                    <span className="text-[9px] font-mono font-bold text-gray-500">#{idx + 1}</span>
-                    <img src={TEAM_LOGOS[team.abbr]} alt="" className="w-5.5 h-5.5 object-contain" />
-                    <span className="font-bold text-white text-xs">{team.name}</span>
-                  </div>
-                  <span className="font-mono font-bold text-successor-mint text-xs">{getAverageFdr(team)}</span>
-                </div>
-              ))}
-            </div>
-          </div>
 
-          {/* Card 2: Hardest Runs */}
-          <div className="glass-card rounded-2xl p-4.5 border-l-2 border-l-red-500">
-            <div className="flex justify-between items-center mb-3">
-              <h2 className="text-xs font-black uppercase tracking-wider text-white flex items-center gap-2">
-                <TrendingUp size={13} className="text-red-500" />
-                Schwerster Run (Sptg. {gwRange})
-              </h2>
-              <span className="text-[8.5px] font-mono text-red-400 bg-red-500/10 px-1.5 py-0.5 rounded">Gefahr</span>
-            </div>
-            <div className="space-y-2.5">
-              {hardestTeams.map((team, idx) => (
-                <div key={team.abbr} className="flex justify-between items-center text-xs py-0.5 border-b border-white/[0.02] last:border-0">
-                  <div className="flex items-center gap-2.5">
-                    <span className="text-[9px] font-mono font-bold text-gray-500">#{idx + 1}</span>
-                    <img src={TEAM_LOGOS[team.abbr]} alt="" className="w-5.5 h-5.5 object-contain" />
-                    <span className="font-bold text-white text-xs">{team.name}</span>
-                  </div>
-                  <span className="font-mono font-bold text-red-400 text-xs">{getAverageFdr(team)}</span>
-                </div>
-              ))}
-            </div>
           </div>
         </div>
 
       </div>
 
-      {/* FULL FDR GRID MATRIX */}
+      {/* BEST / WORST RUNS WIDGETS */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        
+        {/* Card 1: Easiest Runs */}
+        <div className="glass-card rounded-xl p-4 border border-white/[0.04] border-l-2 border-l-successor-mint">
+          <div className="flex justify-between items-center mb-2.5">
+            <h2 className="text-[10px] font-black uppercase tracking-widest text-white flex items-center gap-1.5">
+              <Sparkles size={11} className="text-successor-mint" />
+              Bester Run (Sptg. {gwRange})
+            </h2>
+            <span className="text-[8px] font-mono text-successor-mint bg-successor-mint/10 px-1.5 py-0.5 rounded">Einfach</span>
+          </div>
+          <div className="space-y-2">
+            {easiestTeams.map((team, idx) => (
+              <div key={team.abbr} className="flex justify-between items-center text-xs py-0.5">
+                <div className="flex items-center gap-2">
+                  <span className="text-[8.5px] font-mono font-bold text-gray-500">#{idx + 1}</span>
+                  <img src={TEAM_LOGOS[team.abbr]} alt="" className="w-5 h-5 object-contain" />
+                  <span className="font-bold text-white text-[11px]">{team.name}</span>
+                </div>
+                <span className="font-mono font-bold text-successor-mint text-[11px] bg-[#00ff88]/5 px-2 py-0.5 rounded border border-[#00ff88]/10">{getAverageFdr(team)}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Card 2: Hardest Runs */}
+        <div className="glass-card rounded-xl p-4 border border-white/[0.04] border-l-2 border-l-red-500">
+          <div className="flex justify-between items-center mb-2.5">
+            <h2 className="text-[10px] font-black uppercase tracking-widest text-white flex items-center gap-1.5">
+              <TrendingUp size={11} className="text-red-500" />
+              Schwerster Run (Sptg. {gwRange})
+            </h2>
+            <span className="text-[8px] font-mono text-red-400 bg-red-500/10 px-1.5 py-0.5 rounded">Gefahr</span>
+          </div>
+          <div className="space-y-2">
+            {hardestTeams.map((team, idx) => (
+              <div key={team.abbr} className="flex justify-between items-center text-xs py-0.5">
+                <div className="flex items-center gap-2">
+                  <span className="text-[8.5px] font-mono font-bold text-gray-500">#{idx + 1}</span>
+                  <img src={TEAM_LOGOS[team.abbr]} alt="" className="w-5 h-5 object-contain" />
+                  <span className="font-bold text-white text-[11px]">{team.name}</span>
+                </div>
+                <span className="font-mono font-bold text-red-400 text-[11px] bg-red-500/5 px-2 py-0.5 rounded border border-red-500/10">{getAverageFdr(team)}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+      </div>
+
+      {/* NEXTXI-STYLE CLEAN FDR MATRIX GRID (FULL WIDTH) */}
       <div className="glass-card rounded-2xl overflow-hidden border border-white/[0.04]">
-        <div className="p-4 border-b border-white/[0.06] flex items-center justify-between">
+        <div className="p-4.5 border-b border-white/[0.05] flex items-center justify-between">
           <div>
             <h2 className="text-sm font-black uppercase tracking-wider text-white">Spielplan-Stärke (FDR-Matrix)</h2>
-            <span className="text-[9.5px] text-successor-textMuted font-mono">Statistischer FDR-Gegnerwert der Bundesliga-Clubs</span>
+            <span className="text-[9.5px] text-successor-textMuted font-mono">Übersicht aller Bundesliga-Clubs und Spieltage</span>
           </div>
           
-          <div className="flex gap-2.5 items-center text-[8.5px] font-mono text-gray-500">
-            <span className="flex items-center gap-1"><span className="w-2 h-2 bg-successor-mint rounded-sm"></span> 1-2 (Leicht)</span>
-            <span className="flex items-center gap-1"><span className="w-2 h-2 bg-white/[0.05] border border-white/[0.06] rounded-sm"></span> 3 (Neutral)</span>
-            <span className="flex items-center gap-1"><span className="w-2 h-2 bg-red-500/10 border border-red-500/20 rounded-sm"></span> 4-5 (Schwer)</span>
+          <div className="flex gap-2 items-center text-[8px] font-mono text-gray-500 uppercase tracking-wider">
+            <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-[#00ff88]"></span> 1-2 (Leicht)</span>
+            <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-gray-500"></span> 3 (Neutral)</span>
+            <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-red-500"></span> 4-5 (Schwer)</span>
           </div>
         </div>
 
         <div className="overflow-x-auto">
           <table className="w-full border-collapse text-left">
             <thead>
-              <tr className="border-b border-white/[0.06] bg-[#0d0e10]/40 text-[9px] uppercase tracking-[0.15em] font-mono text-successor-textMuted">
-                <th className="py-3.5 px-5">Team</th>
-                <th className="py-3.5 px-4 text-center">Avg FDR</th>
+              <tr className="border-b border-white/[0.05] bg-[#0d0e10]/40 text-[9px] uppercase tracking-[0.12em] font-mono text-successor-textMuted">
+                <th className="py-3 px-5">Verein</th>
+                <th className="py-3 px-4 text-center">Avg FDR</th>
                 {Array.from({ length: 5 }).map((_, i) => {
                   const idx = gwRange === '1-5' ? i + 1 : i + 6;
                   return (
-                    <th key={i} className="py-3.5 px-3 text-center">GW {idx}</th>
+                    <th key={i} className="py-3 px-3 text-center">GW {idx}</th>
                   );
                 })}
               </tr>
             </thead>
-            <tbody className="divide-y divide-white/[0.03]">
+            <tbody className="divide-y divide-white/[0.02]">
               {teams.map((team) => {
                 const avgFdr = getAverageFdr(team);
                 const activeTeamFixtures = gwRange === '1-5' ? team.fixtures.slice(0, 5) : team.fixtures.slice(5, 10);
                 
                 return (
                   <tr key={team.name} className="hover:bg-white/[0.01] transition-colors">
-                    {/* Compact Team Cell */}
+                    {/* Compact Team Cell with tiny standard logo */}
                     <td className="py-2.5 px-5 flex items-center gap-2.5">
-                      <img src={TEAM_LOGOS[team.abbr]} alt="" className="w-5.5 h-5.5 object-contain flex-shrink-0" />
-                      <span className="text-[11px] font-black text-white whitespace-nowrap">{team.name}</span>
+                      <img src={TEAM_LOGOS[team.abbr]} alt="" className="w-5 h-5 object-contain flex-shrink-0" />
+                      <span className="text-[11px] font-bold text-white whitespace-nowrap">{team.name}</span>
                     </td>
 
                     {/* Average FDR */}
-                    <td className="py-2.5 px-4 text-center font-mono font-black text-[11px] text-white">
+                    <td className="py-2.5 px-4 text-center font-mono font-black text-xs text-white">
                       {avgFdr}
                     </td>
 
-                    {/* gwRange Fixtures */}
+                    {/* gameweeks */}
                     {activeTeamFixtures.map((fixture, fIdx) => {
                       const fdr = calcFdr(fixture);
 
                       return (
                         <td key={fIdx} className="py-2.5 px-2 text-center">
-                          <div className={`w-11 py-1 rounded text-center text-[8.5px] font-black uppercase mx-auto ${getDifficultyColor(fdr)}`}>
-                            {fixture.opponentAbbr}
-                            <span className="text-[6.5px] font-normal lowercase block">
+                          <div className="relative inline-flex items-center gap-1.5 bg-[#0d0e10]/50 border border-white/[0.04] pl-2 pr-2.5 py-1 rounded-lg text-[9px] font-black uppercase text-white hover:border-white/10 transition-colors">
+                            {/* Tiny indicator dot showing difficulty */}
+                            <span className={`w-1.5 h-1.5 rounded-full ${getDifficultyDotColor(fdr)}`}></span>
+                            <span>{fixture.opponentAbbr}</span>
+                            <span className="text-[7.5px] font-mono text-gray-500 font-normal lowercase">
                               {fixture.isHome ? 'h' : 'a'}
                             </span>
                           </div>
@@ -699,14 +746,14 @@ export function FixturePlanner() {
       {/* ROTATION PLANNER COMPONENT */}
       <div className="glass-card rounded-2xl p-5 space-y-4 border border-white/[0.04]">
         <div className="flex justify-between items-center border-b border-white/[0.06] pb-3">
-          <h2 className="text-sm font-black uppercase tracking-wider text-white flex items-center gap-2">
-            <Sliders size={16} className="text-successor-mint" />
+          <h2 className="text-xs font-black uppercase tracking-wider text-white flex items-center gap-2">
+            <Sliders size={14} className="text-successor-mint" />
             Torhüter- &amp; Roster-Rotationsplaner
           </h2>
           <div className="flex items-center gap-2">
-            <span className="text-[9px] font-mono text-successor-textMuted uppercase">Kombinations-Score</span>
+            <span className="text-[9px] font-mono text-successor-textMuted uppercase">Match-Score</span>
             <div className={`px-2 py-0.5 rounded-md text-[10px] font-black font-mono ${rotScore >= 80 ? 'bg-successor-mint/10 text-successor-mint' : rotScore >= 50 ? 'bg-orange-500/10 text-orange-400' : 'bg-red-500/10 text-red-400'}`}>
-              {rotScore}% Match
+              {rotScore}%
             </div>
           </div>
         </div>
@@ -717,11 +764,11 @@ export function FixturePlanner() {
             <div>
               <label className="text-[9px] font-mono uppercase text-successor-textMuted block mb-1">Spieler / Team A</label>
               <div className="relative flex items-center">
-                <img src={TEAM_LOGOS[teams[teamAIdx].abbr]} alt="" className="absolute left-3.5 w-5.5 h-5.5 object-contain pointer-events-none" />
+                <img src={TEAM_LOGOS[teams[teamAIdx].abbr]} alt="" className="absolute left-3 w-5 h-5 object-contain pointer-events-none" />
                 <select
                   value={teamAIdx}
                   onChange={e => setTeamAIdx(Number(e.target.value))}
-                  className="w-full bg-[#0d0e10]/80 border border-white/[0.06] rounded-xl py-2.5 pl-11 pr-3.5 text-xs font-bold text-white focus:border-successor-mint/50 focus:outline-none transition-all"
+                  className="w-full bg-[#0d0e10]/80 border border-white/[0.06] rounded-xl py-2 pl-10 pr-3.5 text-xs font-bold text-white focus:border-successor-mint/50 focus:outline-none transition-all cursor-pointer"
                 >
                   {teams.map((t, idx) => (
                     <option key={t.abbr} value={idx}>{t.name} (FDR: {getAverageFdr(t)})</option>
@@ -732,11 +779,11 @@ export function FixturePlanner() {
             <div>
               <label className="text-[9px] font-mono uppercase text-successor-textMuted block mb-1">Spieler / Team B</label>
               <div className="relative flex items-center">
-                <img src={TEAM_LOGOS[teams[teamBIdx].abbr]} alt="" className="absolute left-3.5 w-5.5 h-5.5 object-contain pointer-events-none" />
+                <img src={TEAM_LOGOS[teams[teamBIdx].abbr]} alt="" className="absolute left-3 w-5 h-5 object-contain pointer-events-none" />
                 <select
                   value={teamBIdx}
                   onChange={e => setTeamBIdx(Number(e.target.value))}
-                  className="w-full bg-[#0d0e10]/80 border border-white/[0.06] rounded-xl py-2.5 pl-11 pr-3.5 text-xs font-bold text-white focus:border-successor-mint/50 focus:outline-none transition-all"
+                  className="w-full bg-[#0d0e10]/80 border border-white/[0.06] rounded-xl py-2 pl-10 pr-3.5 text-xs font-bold text-white focus:border-successor-mint/50 focus:outline-none transition-all cursor-pointer"
                 >
                   {teams.map((t, idx) => (
                     <option key={t.abbr} value={idx}>{t.name} (FDR: {getAverageFdr(t)})</option>
@@ -748,10 +795,9 @@ export function FixturePlanner() {
 
           {/* Rotation visual side by side */}
           <div className="p-4 bg-[#0d0e10]/50 border border-white/[0.04] rounded-xl flex flex-col justify-between space-y-3">
-            <div className="text-[10px] font-mono text-successor-textMuted uppercase font-bold">Rotation für Spieltag (GW {gwRange === '1-5' ? '1-5' : '6-10'}):</div>
+            <div className="text-[10px] font-mono text-gray-500 uppercase font-black">Rotations-Auswahl (GW {gwRange === '1-5' ? '1-5' : '6-10'}):</div>
             
             <div className="flex justify-between items-center">
-              {/* Display fixtures */}
               {Array.from({ length: 5 }).map((_, i) => {
                 const idx = gwRange === '1-5' ? i : i + 5;
                 const fixA = teams[teamAIdx].fixtures[idx];
@@ -759,7 +805,6 @@ export function FixturePlanner() {
                 const fdrA = calcFdr(fixA);
                 const fdrB = calcFdr(fixB);
                 
-                // Which player should we start? (Choose the lowest FDR)
                 const startA = fdrA <= fdrB;
 
                 return (
@@ -767,11 +812,11 @@ export function FixturePlanner() {
                     <span className="text-[8px] font-mono font-bold text-gray-500 uppercase">GW {idx + 1}</span>
                     <div className="flex flex-col gap-1">
                       {/* Team A dot */}
-                      <div className={`w-8 py-1 rounded text-center text-[8.5px] font-black uppercase ${getDifficultyColor(fdrA)} ${startA ? 'ring-2 ring-white/50' : 'opacity-40'}`} title={`${teams[teamAIdx].name} gegen ${fixA.opponent}`}>
+                      <div className={`w-8 py-0.5 rounded text-center text-[8.5px] font-black uppercase ${getDifficultyColor(fdrA)} ${startA ? 'ring-2 ring-white/50' : 'opacity-40'}`}>
                         {fixA.opponentAbbr}
                       </div>
                       {/* Team B dot */}
-                      <div className={`w-8 py-1 rounded text-center text-[8.5px] font-black uppercase ${getDifficultyColor(fdrB)} ${!startA ? 'ring-2 ring-white/50' : 'opacity-40'}`} title={`${teams[teamBIdx].name} gegen ${fixB.opponent}`}>
+                      <div className={`w-8 py-0.5 rounded text-center text-[8.5px] font-black uppercase ${getDifficultyColor(fdrB)} ${!startA ? 'ring-2 ring-white/50' : 'opacity-40'}`}>
                         {fixB.opponentAbbr}
                       </div>
                     </div>
@@ -783,7 +828,7 @@ export function FixturePlanner() {
             <div className="text-[9px] font-mono text-successor-textMuted">
               {rotScore >= 80 
                 ? '💡 Tipp: Diese beiden Spieler rotieren exzellent! Du hast an fast jedem Spieltag eine grüne/einfache Partie auf dieser Position.'
-                : '⚠️ Hinweis: Zu viele Spieltage, an denen beide Spieler schwere Partien gleichzeitig haben. Wähle eine andere Rotation.'}
+                : '⚠️ Hinweis: Zu viele Spieltage, an denen beide Spieler schwere Partien gleichzeitig haben.'}
             </div>
           </div>
         </div>
