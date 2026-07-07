@@ -549,7 +549,6 @@ export function FixturePlanner() {
                 // Offset is pixel-shifted: (avgFdrVal - fdr) * 26.
                 const diffFromAvg = avgFdrVal - fdr;
                 const yOffset = diffFromAvg * 28; // Up to 56px shift up/down
-                const nodeTop = 80 - yOffset - 16; // 16px is half node height
 
                 return (
                   <div 
