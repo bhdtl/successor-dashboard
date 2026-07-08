@@ -485,33 +485,33 @@ export default function App() {
       {/* MAIN CONTAINER */}
       <div className="flex-grow flex flex-col min-w-0">
         
-        {/* MOBILE HEADER */}
-        <header className="md:hidden ios-nav-bar fixed top-0 left-0 right-0 z-40 px-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <img src="/logo.png" alt="Successor Logo" className="h-6 w-6 object-contain" />
-            <span className="text-sm font-black uppercase tracking-wider text-white">Successor</span>
-          </div>
-
-          {/* Login/Logout Button for Mobile */}
-          {userEmail ? (
-            <button
-              onClick={handleLogout}
-              className="text-[9px] font-black uppercase tracking-wider bg-red-950/20 border border-red-900/30 rounded-lg px-2.5 py-1 text-red-400 hover:text-white"
-            >
-              Logout
-            </button>
-          ) : (
-            <button
-              onClick={() => setShowAuthModal(true)}
-              className="text-[9px] font-black uppercase tracking-wider bg-white/[0.04] border border-white/[0.06] rounded-lg px-2.5 py-1 text-gray-300 hover:text-white"
-            >
-              Login
-            </button>
-          )}
-        </header>
-
         {/* PAGE BODY AREA */}
-        <main className="flex-grow pt-[calc(3.5rem+env(safe-area-inset-top,0px))] pb-[calc(5rem+env(safe-area-inset-bottom,0px))] md:pb-6 md:pt-6 px-4 md:px-8 max-w-6xl w-full mx-auto overflow-y-auto no-scrollbar">
+        <main className="flex-grow pt-[max(1.25rem,env(safe-area-inset-top,0px))] pb-[calc(5rem+env(safe-area-inset-bottom,0px))] md:pb-6 md:pt-6 px-4 md:px-8 max-w-6xl w-full mx-auto overflow-y-auto no-scrollbar">
+          
+          {/* MOBILE HEADER (scrolls away with page content) */}
+          <header className="md:hidden flex items-center justify-between pb-3.5 mb-5 border-b border-white/[0.04] w-full">
+            <div className="flex items-center gap-2">
+              <img src="/logo.png" alt="Successor Logo" className="h-6 w-6 object-contain" style={{ width: '24px', height: '24px' }} />
+              <span className="text-sm font-black uppercase tracking-wider text-white">Successor</span>
+            </div>
+
+            {/* Login/Logout Button for Mobile */}
+            {userEmail ? (
+              <button
+                onClick={handleLogout}
+                className="text-[9px] font-black uppercase tracking-wider bg-red-950/20 border border-red-900/30 rounded-lg px-2.5 py-1 text-red-400 hover:text-white"
+              >
+                Logout
+              </button>
+            ) : (
+              <button
+                onClick={() => setShowAuthModal(true)}
+                className="text-[9px] font-black uppercase tracking-wider bg-white/[0.04] border border-white/[0.06] rounded-lg px-2.5 py-1 text-gray-300 hover:text-white"
+              >
+                Login
+              </button>
+            )}
+          </header>
           
           {activeTab === 'dashboard' && (
             <Dashboard 
