@@ -491,7 +491,7 @@ export function FixturePlanner() {
       {/* HEADER SECTION */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
         <div className="flex items-center gap-2">
-          <img src={BUNDESLIGA_LOGO} alt="" className="h-6 w-6 object-contain opacity-80" />
+          <img src={BUNDESLIGA_LOGO} alt="" className="h-6 w-6 object-contain opacity-80" style={{ width: '24px', height: '24px' }} />
           <h1 className="text-lg font-black uppercase tracking-wider text-white">Spielplan &amp; FDR Matrix</h1>
         </div>
 
@@ -530,7 +530,7 @@ export function FixturePlanner() {
               }}
               className="flex items-center gap-2.5 bg-[#0d0e12]/80 hover:bg-black border border-white/[0.06] hover:border-white/10 rounded-xl px-3.5 py-2 text-xs font-black text-white transition-all shadow-inner"
             >
-              <img src={TEAM_LOGOS[activeTeam.abbr]} alt="" className="w-5 h-5 object-contain" />
+              <img src={TEAM_LOGOS[activeTeam.abbr]} alt="" className="w-5 h-5 object-contain" style={{ width: '20px', height: '20px' }} />
               <span>{activeTeam.name}</span>
               <ChevronDown size={12} className="text-gray-500 ml-0.5" />
             </button>
@@ -586,8 +586,8 @@ export function FixturePlanner() {
                     {/* Top Static Section: Date & Flag */}
                     <div className="flex flex-col items-center gap-1 mt-1">
                       <span className="text-[8px] font-mono font-bold text-gray-500">{fixture.date}</span>
-                      <div className="w-6 h-6 rounded-full overflow-hidden border border-white/[0.08] bg-[#0d0e12] p-0.5 flex items-center justify-center shadow-inner">
-                        <img src={TEAM_LOGOS[fixture.opponentAbbr]} alt="" className="w-full h-full object-contain" />
+                      <div className="w-6 h-6 rounded-full overflow-hidden border border-white/[0.08] bg-[#0d0e12] p-0.5 flex items-center justify-center shadow-inner" style={{ width: '24px', height: '24px' }}>
+                        <img src={TEAM_LOGOS[fixture.opponentAbbr]} alt="" className="w-full h-full object-contain" style={{ width: '20px', height: '20px' }} />
                       </div>
                     </div>
 
@@ -656,7 +656,7 @@ export function FixturePlanner() {
               <div key={team.abbr} className="flex justify-between items-center text-xs py-1 border-b border-white/[0.02] last:border-0">
                 <div className="flex items-center gap-2.5">
                   <span className="text-[9px] font-mono font-bold text-gray-500">#{idx + 1}</span>
-                  <img src={TEAM_LOGOS[team.abbr]} alt="" className="w-5 h-5 object-contain" />
+                  <img src={TEAM_LOGOS[team.abbr]} alt="" className="w-5 h-5 object-contain" style={{ width: '20px', height: '20px' }} />
                   <span className="font-bold text-white text-[11.5px]">{team.name}</span>
                 </div>
                 <span className="font-mono font-bold text-successor-mint text-[11px] bg-[#00ff88]/5 px-2 py-0.5 rounded border border-[#00ff88]/10 shadow-[0_0_10px_rgba(0,255,136,0.05)]">
@@ -683,7 +683,7 @@ export function FixturePlanner() {
               <div key={team.abbr} className="flex justify-between items-center text-xs py-1 border-b border-white/[0.02] last:border-0">
                 <div className="flex items-center gap-2.5">
                   <span className="text-[9px] font-mono font-bold text-gray-500">#{idx + 1}</span>
-                  <img src={TEAM_LOGOS[team.abbr]} alt="" className="w-5 h-5 object-contain" />
+                  <img src={TEAM_LOGOS[team.abbr]} alt="" className="w-5 h-5 object-contain" style={{ width: '20px', height: '20px' }} />
                   <span className="font-bold text-white text-[11.5px]">{team.name}</span>
                 </div>
                 <span className="font-mono font-bold text-red-400 text-[11px] bg-red-500/5 px-2 py-0.5 rounded border border-red-500/10">
@@ -741,7 +741,7 @@ export function FixturePlanner() {
                   <tr key={team.name} className="hover:bg-white/[0.01] transition-colors">
                     {/* Compact Team Cell with tiny standard logo */}
                     <td className="py-3 px-6 flex items-center gap-2.5">
-                      <img src={TEAM_LOGOS[team.abbr]} alt="" className="w-5 h-5 object-contain flex-shrink-0" />
+                      <img src={TEAM_LOGOS[team.abbr]} alt="" className="w-5 h-5 object-contain flex-shrink-0" style={{ width: '20px', height: '20px' }} />
                       <span className="text-[11.5px] font-bold text-white whitespace-nowrap">{team.name}</span>
                     </td>
 
@@ -796,7 +796,7 @@ export function FixturePlanner() {
             <div>
               <label className="text-[9px] font-mono uppercase text-successor-textMuted block mb-1">Spieler / Team A</label>
               <div className="relative flex items-center">
-                <img src={TEAM_LOGOS[teams[teamAIdx].abbr]} alt="" className="absolute left-3 w-5 h-5 object-contain pointer-events-none" />
+                <img src={TEAM_LOGOS[teams[teamAIdx].abbr]} alt="" className="absolute left-3 w-5 h-5 object-contain pointer-events-none" style={{ width: '20px', height: '20px' }} />
                 <select
                   value={teamAIdx}
                   onChange={e => setTeamAIdx(Number(e.target.value))}
@@ -811,7 +811,7 @@ export function FixturePlanner() {
             <div>
               <label className="text-[9px] font-mono uppercase text-successor-textMuted block mb-1">Spieler / Team B</label>
               <div className="relative flex items-center">
-                <img src={TEAM_LOGOS[teams[teamBIdx].abbr]} alt="" className="absolute left-3 w-5 h-5 object-contain pointer-events-none" />
+                <img src={TEAM_LOGOS[teams[teamBIdx].abbr]} alt="" className="absolute left-3 w-5 h-5 object-contain pointer-events-none" style={{ width: '20px', height: '20px' }} />
                 <select
                   value={teamBIdx}
                   onChange={e => setTeamBIdx(Number(e.target.value))}
@@ -919,7 +919,7 @@ export function FixturePlanner() {
                       }`}
                     >
                       <div className="flex items-center gap-3">
-                        <img src={TEAM_LOGOS[team.abbr]} alt="" className="w-6 h-6 object-contain" />
+                        <img src={TEAM_LOGOS[team.abbr]} alt="" className="w-6 h-6 object-contain" style={{ width: '24px', height: '24px' }} />
                         <div className="text-left">
                           <div className="text-xs font-black text-white">{team.name}</div>
                           <span className="text-[8.5px] font-mono text-gray-500 uppercase">{team.abbr}</span>
