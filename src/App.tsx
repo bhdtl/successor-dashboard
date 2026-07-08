@@ -550,8 +550,20 @@ export default function App() {
         </main>
 
         {/* FLOATING MOBILE TAB BAR */}
-        <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))]">
-          <nav className="ios-tab-bar">
+        <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))]">
+          <nav 
+            className="ios-tab-bar"
+            style={{
+              backgroundColor: 'rgba(18, 20, 24, 0.75)',
+              backdropFilter: 'blur(50px) saturate(240%)',
+              WebkitBackdropFilter: 'blur(50px) saturate(240%)',
+              border: '1px solid rgba(255, 255, 255, 0.14)',
+              boxShadow: '0 12px 32px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.25)',
+              borderRadius: '24px',
+              position: 'relative',
+              width: '100%'
+            }}
+          >
             <div className="ios-tab-inner">
               
               <button
