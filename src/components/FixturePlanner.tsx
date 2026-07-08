@@ -641,25 +641,25 @@ export function FixturePlanner() {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         
         {/* Card 1: Easiest Runs */}
-        <div className="glass-card rounded-2xl p-4.5 border border-white/[0.04] border-l-2 border-l-successor-mint space-y-3">
-          <div className="flex justify-between items-center">
-            <h2 className="text-[10px] font-black uppercase tracking-widest text-white flex items-center gap-1.5">
+        <div className="glass-card rounded-2xl p-5 border border-white/[0.04] border-l-2 border-l-successor-mint space-y-4">
+          <div className="flex justify-between items-center mb-1">
+            <h2 className="text-[10px] font-black uppercase tracking-widest text-white/90 flex items-center gap-1.5">
               <Sparkles size={12} className="text-successor-mint animate-pulse" />
               Bester Run (Sptg. {gwRange})
             </h2>
-            <span className="text-[8.5px] px-2 py-0.5 rounded-md bg-emerald-500/10 border border-emerald-500/20 text-[#00ff88] font-bold uppercase tracking-wider">
+            <span className="text-[8.5px] font-mono text-successor-mint bg-successor-mint/10 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">
               Einfach
             </span>
           </div>
-          <div className="space-y-2">
+          <div className="space-y-1">
             {easiestTeams.map((team, idx) => (
-              <div key={team.abbr} className="flex justify-between items-center text-xs py-1 border-b border-white/[0.02] last:border-0">
+              <div key={team.abbr} className="flex justify-between items-center text-xs py-2.5 border-b border-white/[0.02] last:border-0">
                 <div className="flex items-center gap-2.5">
-                  <span className="text-[9px] font-mono font-bold text-gray-500">#{idx + 1}</span>
-                  <img src={TEAM_LOGOS[team.abbr]} alt="" className="w-5 h-5 object-contain" style={{ width: '20px', height: '20px' }} />
-                  <span className="font-bold text-white text-[11.5px]">{team.name}</span>
+                  <span className="text-[10px] font-mono font-bold text-gray-500 w-4">#{idx + 1}</span>
+                  <img src={TEAM_LOGOS[team.abbr]} alt="" className="w-5.5 h-5.5 object-contain" style={{ width: '22px', height: '22px' }} />
+                  <span className="font-semibold text-white/90 text-xs">{team.name}</span>
                 </div>
-                <span className="font-mono font-bold text-successor-mint text-[11px] bg-[#00ff88]/5 px-2 py-0.5 rounded border border-[#00ff88]/10 shadow-[0_0_10px_rgba(0,255,136,0.05)]">
+                <span className="font-mono font-black text-[11px] text-successor-mint bg-successor-mint/10 px-2.5 py-0.5 rounded-md">
                   {getAverageFdr(team)}
                 </span>
               </div>
@@ -668,25 +668,25 @@ export function FixturePlanner() {
         </div>
 
         {/* Card 2: Hardest Runs */}
-        <div className="glass-card rounded-2xl p-4.5 border border-white/[0.04] border-l-2 border-l-red-500 space-y-3">
-          <div className="flex justify-between items-center">
-            <h2 className="text-[10px] font-black uppercase tracking-widest text-white flex items-center gap-1.5">
+        <div className="glass-card rounded-2xl p-5 border border-white/[0.04] border-l-2 border-l-red-500 space-y-4">
+          <div className="flex justify-between items-center mb-1">
+            <h2 className="text-[10px] font-black uppercase tracking-widest text-white/90 flex items-center gap-1.5">
               <TrendingUp size={12} className="text-red-500" />
               Schwerster Run (Sptg. {gwRange})
             </h2>
-            <span className="text-[8.5px] px-2 py-0.5 rounded-md bg-red-500/10 border border-red-500/20 text-red-400 font-bold uppercase tracking-wider">
+            <span className="text-[8.5px] font-mono text-red-400 bg-red-500/10 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">
               Gefahr
             </span>
           </div>
-          <div className="space-y-2">
+          <div className="space-y-1">
             {hardestTeams.map((team, idx) => (
-              <div key={team.abbr} className="flex justify-between items-center text-xs py-1 border-b border-white/[0.02] last:border-0">
+              <div key={team.abbr} className="flex justify-between items-center text-xs py-2.5 border-b border-white/[0.02] last:border-0">
                 <div className="flex items-center gap-2.5">
-                  <span className="text-[9px] font-mono font-bold text-gray-500">#{idx + 1}</span>
-                  <img src={TEAM_LOGOS[team.abbr]} alt="" className="w-5 h-5 object-contain" style={{ width: '20px', height: '20px' }} />
-                  <span className="font-bold text-white text-[11.5px]">{team.name}</span>
+                  <span className="text-[10px] font-mono font-bold text-gray-500 w-4">#{idx + 1}</span>
+                  <img src={TEAM_LOGOS[team.abbr]} alt="" className="w-5.5 h-5.5 object-contain" style={{ width: '22px', height: '22px' }} />
+                  <span className="font-semibold text-white/90 text-xs">{team.name}</span>
                 </div>
-                <span className="font-mono font-bold text-red-400 text-[11px] bg-red-500/5 px-2 py-0.5 rounded border border-red-500/10">
+                <span className="font-mono font-black text-[11px] text-red-400 bg-red-500/10 px-2.5 py-0.5 rounded-md">
                   {getAverageFdr(team)}
                 </span>
               </div>
