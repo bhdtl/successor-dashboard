@@ -188,6 +188,14 @@ export function AdminCMS({ players, onAddPlayer, onDeletePlayer, onBulkAdd }: Ad
       }));
 
       if (!isOfflineMode) {
+        // Clear all previous players from the database first
+        const { error: deleteError } = await supabase
+          .from('players')
+          .delete()
+          .neq('id', '');
+
+        if (deleteError) throw deleteError;
+
         // Bulk insert to Supabase database (overwrite on conflict)
         const dbRows = BUNDESLIGA_ROSTERS.map(p => ({
           id: p.id,
