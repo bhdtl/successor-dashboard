@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import type { Player } from './PlayerCard';
-import { Shield, Plus, Trash2, Database, RefreshCw, Check, Upload, Calendar } from 'lucide-react';
+import { Shield, Plus, Trash2, Database, RefreshCw, Check, Upload, Calendar, FileJson } from 'lucide-react';
 import { supabase, isOfflineMode } from '../lib/supabase';
+import { BUNDESLIGA_ROSTERS } from '../data/rosters';
 
 interface AdminCMSProps {
   players: Player[];
@@ -27,6 +28,9 @@ export function AdminCMS({ players, onAddPlayer, onDeletePlayer, onBulkAdd }: Ad
   // Spielplan states
   const [spielplan, setSpielplan] = useState<any>(null);
   const [spielplanName, setSpielplanName] = useState('');
+
+  const [dbJsonFile, setDbJsonFile] = useState<any[] | null>(null);
+  const [dbJsonName, setDbJsonName] = useState('');
 
   const [syncing, setSyncing] = useState(false);
   const [syncSuccess, setSyncSuccess] = useState(false);
@@ -163,26 +167,29 @@ export function AdminCMS({ players, onAddPlayer, onDeletePlayer, onBulkAdd }: Ad
     onDeletePlayer(playerId);
   };
 
-  // Mock scraper to simulate scraping Transfermarkt
+  // Populates database with the high-fidelity rosters dataset of all 18 Bundesliga teams (164 players)
   const handleScrapeTransfermarkt = async () => {
     setSyncing(true);
     setSyncSuccess(false);
 
     try {
-      const scraped: Player[] = [
-        { id: 'tm-1', name: 'Florian Wirtz', position: 'MID', price: 42000000, xp: 215, form: 1.4, team: 'Bayer Leverkusen', opponent: 'FC Bayern', isHome: false, avatarColor: 'from-red-600 to-black' },
-        { id: 'tm-2', name: 'Jamal Musiala', position: 'MID', price: 39500000, xp: 195, form: 1.3, team: 'FC Bayern', opponent: 'Leverkusen', isHome: true, avatarColor: 'from-red-600 to-red-950' },
-        { id: 'tm-3', name: 'Harry Kane', position: 'FWD', price: 46000000, xp: 240, form: 1.2, team: 'FC Bayern', opponent: 'Leverkusen', isHome: true, avatarColor: 'from-red-600 to-red-950' },
-        { id: 'tm-4', name: 'Alejandro Grimaldo', position: 'DEF', price: 34000000, xp: 185, form: 1.3, team: 'Bayer Leverkusen', opponent: 'FC Bayern', isHome: false, avatarColor: 'from-red-600 to-black' },
-        { id: 'tm-5', name: 'Gregor Kobel', position: 'GK', price: 21000000, xp: 115, form: 1.0, team: 'Dortmund', opponent: 'Stuttgart', isHome: true, avatarColor: 'from-yellow-500 to-black' },
-        { id: 'tm-6', name: 'Nico Schlotterbeck', position: 'DEF', price: 24000000, xp: 130, form: 1.1, team: 'Dortmund', opponent: 'Stuttgart', isHome: true, avatarColor: 'from-yellow-500 to-black' },
-        { id: 'tm-7', name: 'Xavi Simons', position: 'MID', price: 31000000, xp: 160, form: 1.1, team: 'RB Leipzig', opponent: 'Frankfurt', isHome: false, avatarColor: 'from-blue-600 to-red-600' },
-      ];
+      const scraped: Player[] = BUNDESLIGA_ROSTERS.map(p => ({
+        id: p.id,
+        name: p.name,
+        position: p.position,
+        price: p.price,
+        xp: p.xp,
+        form: p.form,
+        team: p.team,
+        opponent: p.opponent,
+        isHome: p.isHome,
+        avatarColor: p.avatarColor,
+        image: ''
+      }));
 
       if (!isOfflineMode) {
-        // Bulk insert to Supabase database (overwrite on conflict or skip duplicates)
-        // Convert to database snake_case keys
-        const dbRows = scraped.map(p => ({
+        // Bulk insert to Supabase database (overwrite on conflict)
+        const dbRows = BUNDESLIGA_ROSTERS.map(p => ({
           id: p.id,
           name: p.name,
           position: p.position,
@@ -193,7 +200,11 @@ export function AdminCMS({ players, onAddPlayer, onDeletePlayer, onBulkAdd }: Ad
           opponent: p.opponent,
           is_home: p.isHome,
           avatar_color: p.avatarColor,
-          image: p.image
+          kickbase_points: p.kickbase_points,
+          goals: p.goals,
+          assists: p.assists,
+          matches_played: p.matches_played,
+          stats: p.stats
         }));
 
         const { error } = await supabase
@@ -207,7 +218,85 @@ export function AdminCMS({ players, onAddPlayer, onDeletePlayer, onBulkAdd }: Ad
       setSyncSuccess(true);
       setTimeout(() => setSyncSuccess(false), 3000);
     } catch (err: any) {
-      alert('Scraper Sync Fehler: ' + err.message);
+      alert('Datenbank Sync Fehler: ' + err.message);
+    } finally {
+      setSyncing(false);
+    }
+  };
+
+  const handleDbJsonChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setDbJsonName(file.name);
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      try {
+        const parsed = JSON.parse(event.target?.result as string);
+        if (!Array.isArray(parsed)) {
+          alert('Ungültiges Format. Die Datei muss ein Array von Spielern sein.');
+          setDbJsonName('');
+          return;
+        }
+        setDbJsonFile(parsed);
+      } catch (err) {
+        alert('Fehler beim Lesen der JSON-Datei. Bitte überprüfe das Dateiformat.');
+        setDbJsonName('');
+      }
+    };
+    reader.readAsText(file);
+  };
+
+  const handleUploadDbJsonSync = async () => {
+    if (!dbJsonFile) return;
+    setSyncing(true);
+    try {
+      if (!isOfflineMode) {
+        const dbRows = dbJsonFile.map(p => ({
+          id: p.id || 'custom-' + Date.now() + Math.random().toString(36).substring(2, 5),
+          name: p.name,
+          position: p.position,
+          price: p.price,
+          xp: p.xp,
+          form: p.form || 1.0,
+          team: p.team,
+          opponent: p.opponent || 'TBD',
+          is_home: p.isHome !== undefined ? p.isHome : true,
+          avatar_color: p.avatarColor || 'from-gray-600 to-black',
+          kickbase_points: p.kickbase_points || 0,
+          goals: p.goals || 0,
+          assists: p.assists || 0,
+          matches_played: p.matches_played || 0,
+          stats: p.stats || {}
+        }));
+
+        const { error } = await supabase
+          .from('players')
+          .upsert(dbRows, { onConflict: 'id' });
+
+        if (error) throw error;
+      }
+
+      const mapped: Player[] = dbJsonFile.map(p => ({
+        id: p.id || 'custom-' + Date.now() + Math.random().toString(36).substring(2, 5),
+        name: p.name,
+        position: p.position,
+        price: p.price,
+        xp: p.xp,
+        form: p.form || 1.0,
+        team: p.team,
+        opponent: p.opponent || 'TBD',
+        isHome: p.isHome !== undefined ? p.isHome : true,
+        avatarColor: p.avatarColor || 'from-gray-600 to-black',
+        image: ''
+      }));
+
+      onBulkAdd(mapped);
+      alert(`${dbJsonFile.length} Spieler erfolgreich in die Supabase-Datenbank hochgeladen!`);
+      setDbJsonFile(null);
+      setDbJsonName('');
+    } catch (err: any) {
+      alert('Upload Fehler: ' + err.message);
     } finally {
       setSyncing(false);
     }
@@ -239,7 +328,7 @@ export function AdminCMS({ players, onAddPlayer, onDeletePlayer, onBulkAdd }: Ad
           ) : (
             <Database size={14} />
           )}
-          <span>{syncing ? 'Scraping...' : syncSuccess ? 'Synchronisiert!' : 'Transfermarkt Scraper starten'}</span>
+          <span>{syncing ? 'Synchronisiere...' : syncSuccess ? 'Erfolgreich befüllt!' : 'Bundesliga-Datenbank befüllen'}</span>
         </button>
       </div>
 
@@ -412,6 +501,49 @@ export function AdminCMS({ players, onAddPlayer, onDeletePlayer, onBulkAdd }: Ad
                 ))}
               </div>
             )}
+          </div>
+
+          {/* JSON Datenbank Import-Modul */}
+          <div className="glass-card rounded-2xl p-5 space-y-4">
+            <div className="flex justify-between items-center">
+              <h2 className="text-sm font-black uppercase tracking-wider text-white flex items-center gap-2">
+                <FileJson size={16} className="text-successor-mint" />
+                Scraper-Datenbank importieren (JSON)
+              </h2>
+              <span className="text-[9px] font-mono text-successor-textMuted font-bold">Local File Sync</span>
+            </div>
+            
+            <p className="text-[11px] text-successor-textMuted leading-relaxed">
+              Lade die vom FBref-Scraper generierte <code className="text-white bg-white/[0.04] px-1 py-0.5 rounded font-mono">squads_players.json</code> hoch, um die Supabase-Datenbank mit den aktuellsten Leistungsdaten der Spieler zu füttern.
+            </p>
+
+            <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
+              <input
+                type="file"
+                id="db-json-upload"
+                accept=".json"
+                onChange={handleDbJsonChange}
+                className="hidden"
+              />
+              <label
+                htmlFor="db-json-upload"
+                className="flex items-center gap-2 px-4 py-2 border border-white/[0.06] bg-[#0d0e10]/80 rounded-xl text-xs text-gray-300 hover:text-white hover:border-successor-mint/30 cursor-pointer transition-all"
+              >
+                <Upload size={13} className="text-gray-500" />
+                <span>{dbJsonName || 'Datenbankdatei (.json) hochladen'}</span>
+              </label>
+              
+              {dbJsonFile && (
+                <button
+                  onClick={handleUploadDbJsonSync}
+                  disabled={syncing}
+                  className="btn-mint py-2 px-4 text-xs flex items-center gap-2 active:scale-95 transition-transform"
+                >
+                  <Database size={13} />
+                  <span>{syncing ? 'Importiere...' : `${dbJsonFile.length} Spieler in Supabase speichern`}</span>
+                </button>
+              )}
+            </div>
           </div>
 
           {/* Database list */}

@@ -9,7 +9,8 @@ import {
   LogOut, 
   LogIn,
   User,
-  Calendar
+  Calendar,
+  Shield
 } from 'lucide-react';
 
 // Subcomponents
@@ -20,6 +21,7 @@ import { LineupPlanner } from './components/LineupPlanner';
 import { AdminCMS } from './components/AdminCMS';
 import { AuthModal } from './components/AuthModal';
 import { FixturePlanner } from './components/FixturePlanner';
+import { TeamCheck } from './components/TeamCheck';
 import type { Player } from './components/PlayerCard';
 import { supabase, isOfflineMode } from './lib/supabase';
 
@@ -38,7 +40,7 @@ const DEMO_DATABASE: Player[] = [
 ];
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'analytics' | 'transfer' | 'lineup' | 'planner' | 'admin'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'analytics' | 'teamcheck' | 'planner' | 'transfer' | 'lineup' | 'admin'>('dashboard');
   
   // Database states
   const [dbPlayers, setDbPlayers] = useState<Player[]>([]);
@@ -384,6 +386,7 @@ export default function App() {
   const desktopTabs = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'analytics', label: 'Spieler-Analyse', icon: LineChart },
+    { id: 'teamcheck', label: 'Teamcheck', icon: Shield },
     { id: 'planner', label: 'FDR-Planer', icon: Calendar },
     { id: 'transfer', label: 'Transfer-Helfer', icon: Zap },
     { id: 'lineup', label: 'Aufstellungs-Planer', icon: Users },
@@ -526,6 +529,10 @@ export default function App() {
             <PlayerAnalysis players={dbPlayers} />
           )}
 
+          {activeTab === 'teamcheck' && (
+            <TeamCheck />
+          )}
+
           {activeTab === 'planner' && (
             <FixturePlanner />
           )}
@@ -583,6 +590,16 @@ export default function App() {
                 <div className={`ios-tab-content ${activeTab === 'analytics' ? 'ios-tab-active' : 'ios-tab-inactive'}`}>
                   <LineChart size={20} strokeWidth={activeTab === 'analytics' ? 2.5 : 1.8} />
                   <span className="ios-tab-label">Analyse</span>
+                </div>
+              </button>
+
+              <button
+                onClick={() => setActiveTab('teamcheck')}
+                className="ios-tab-item"
+              >
+                <div className={`ios-tab-content ${activeTab === 'teamcheck' ? 'ios-tab-active' : 'ios-tab-inactive'}`}>
+                  <Shield size={20} strokeWidth={activeTab === 'teamcheck' ? 2.5 : 1.8} />
+                  <span className="ios-tab-label">Teamcheck</span>
                 </div>
               </button>
 
