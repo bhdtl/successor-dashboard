@@ -10,7 +10,8 @@ import {
   LogIn,
   User,
   Calendar,
-  Shield
+  Shield,
+  Sliders
 } from 'lucide-react';
 
 // Subcomponents
@@ -22,6 +23,7 @@ import { AdminCMS } from './components/AdminCMS';
 import { AuthModal } from './components/AuthModal';
 import { FixturePlanner } from './components/FixturePlanner';
 import { TeamCheck } from './components/TeamCheck';
+import { MobileMenu } from './components/MobileMenu';
 import type { Player } from './components/PlayerCard';
 import { supabase, isOfflineMode } from './lib/supabase';
 
@@ -51,6 +53,7 @@ export default function App() {
   // Auth states
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const isAdmin = userEmail === 'bh.dtl@web.de';
 
@@ -604,16 +607,6 @@ export default function App() {
               </button>
 
               <button
-                onClick={() => setActiveTab('planner')}
-                className="ios-tab-item"
-              >
-                <div className={`ios-tab-content ${activeTab === 'planner' ? 'ios-tab-active' : 'ios-tab-inactive'}`}>
-                  <Calendar size={20} strokeWidth={activeTab === 'planner' ? 2.5 : 1.8} />
-                  <span className="ios-tab-label">FDR</span>
-                </div>
-              </button>
-
-              <button
                 onClick={() => setActiveTab('transfer')}
                 className="ios-tab-item"
               >
@@ -633,23 +626,33 @@ export default function App() {
                 </div>
               </button>
 
-              {isAdmin && (
-                <button
-                  onClick={() => setActiveTab('admin')}
-                  className="ios-tab-item"
-                >
-                  <div className={`ios-tab-content ${activeTab === 'admin' ? 'ios-tab-active' : 'ios-tab-inactive'}`}>
-                    <ShieldAlert size={20} strokeWidth={activeTab === 'admin' ? 2.5 : 1.8} />
-                    <span className="ios-tab-label">Admin</span>
-                  </div>
-                </button>
-              )}
+              <button
+                onClick={() => setIsMobileMenuOpen(true)}
+                className="ios-tab-item"
+              >
+                <div className="ios-tab-content ios-tab-inactive">
+                  <Sliders size={20} strokeWidth={1.8} />
+                  <span className="ios-tab-label">Menü</span>
+                </div>
+              </button>
 
             </div>
           </nav>
         </div>
 
       </div>
+
+      {/* Mobile drawer control center */}
+      <MobileMenu
+        isOpen={isMobileMenuOpen}
+        onClose={() => setIsMobileMenuOpen(false)}
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        userEmail={userEmail}
+        isAdmin={isAdmin}
+        onLogout={handleLogout}
+        onOpenAuth={() => setShowAuthModal(true)}
+      />
 
       {/* Auth Modal Portal Overlay */}
       <AuthModal 
