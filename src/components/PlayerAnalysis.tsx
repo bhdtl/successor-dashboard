@@ -69,7 +69,7 @@ export function PlayerAnalysis({ players }: PlayerAnalysisProps) {
             placeholder="Name oder Verein suchen..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full bg-[#0d0e10]/80 border border-white/[0.06] rounded-xl py-2 pl-10 pr-4 text-xs text-white placeholder-gray-600 focus:border-successor-mint/50 focus:outline-none transition-all"
+            className="w-full bg-[#0d0e10]/80 border border-white/[0.06] rounded-xl py-2 pl-10 pr-4 text-[16px] md:text-xs text-white placeholder-gray-600 focus:border-successor-mint/50 focus:outline-none transition-all"
           />
         </div>
 

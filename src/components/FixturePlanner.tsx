@@ -893,7 +893,7 @@ export function FixturePlanner() {
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
                 placeholder="Name oder Kürzel suchen..."
-                className="w-full bg-[#0d0e12] border border-white/[0.06] rounded-xl py-2.5 pl-10 pr-4 text-xs font-bold text-white placeholder-gray-500 focus:border-successor-mint/45 focus:outline-none transition-all shadow-inner"
+                className="w-full bg-[#0d0e12] border border-white/[0.06] rounded-xl py-2.5 pl-10 pr-4 text-[16px] md:text-xs font-bold text-white placeholder-gray-500 focus:border-successor-mint/45 focus:outline-none transition-all shadow-inner"
                 autoFocus
               />
             </div>

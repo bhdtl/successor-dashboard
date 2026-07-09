@@ -100,7 +100,7 @@ export function AuthModal({ isOpen, onClose, onLoginSuccess }: AuthModalProps) {
                 onChange={e => setEmail(e.target.value)}
                 placeholder="E-Mail-Adresse"
                 disabled={loading}
-                className="w-full bg-[#0d0e10]/80 border border-white/[0.06] rounded-xl py-2.5 pl-10 pr-4 text-xs text-white placeholder-gray-600 focus:border-successor-mint/50 focus:outline-none transition-all disabled:opacity-50"
+                className="w-full bg-[#0d0e10]/80 border border-white/[0.06] rounded-xl py-2.5 pl-10 pr-4 text-[16px] md:text-xs text-white placeholder-gray-600 focus:border-successor-mint/50 focus:outline-none transition-all disabled:opacity-50"
               />
             </div>
 
@@ -114,7 +114,7 @@ export function AuthModal({ isOpen, onClose, onLoginSuccess }: AuthModalProps) {
                 onChange={e => setPassword(e.target.value)}
                 placeholder="Passwort"
                 disabled={loading}
-                className="w-full bg-[#0d0e10]/80 border border-white/[0.06] rounded-xl py-2.5 pl-10 pr-4 text-xs text-white placeholder-gray-600 focus:border-successor-mint/50 focus:outline-none transition-all disabled:opacity-50"
+                className="w-full bg-[#0d0e10]/80 border border-white/[0.06] rounded-xl py-2.5 pl-10 pr-4 text-[16px] md:text-xs text-white placeholder-gray-600 focus:border-successor-mint/50 focus:outline-none transition-all disabled:opacity-50"
               />
             </div>
           </div>
