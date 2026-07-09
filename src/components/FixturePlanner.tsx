@@ -800,7 +800,7 @@ export function FixturePlanner() {
                 <select
                   value={teamAIdx}
                   onChange={e => setTeamAIdx(Number(e.target.value))}
-                  className="w-full bg-[#0d0e10]/80 border border-white/[0.06] rounded-xl py-2 pl-10 pr-3.5 text-xs font-bold text-white focus:border-successor-mint/50 focus:outline-none transition-all cursor-pointer"
+                  className="w-full bg-[#0d0e10]/80 border border-white/[0.06] rounded-xl py-2 pl-10 pr-3.5 text-[16px] md:text-xs font-bold text-white focus:border-successor-mint/50 focus:outline-none transition-all cursor-pointer"
                 >
                   {teams.map((t, idx) => (
                     <option key={t.abbr} value={idx}>{t.name} (FDR: {getAverageFdr(t)})</option>
@@ -815,7 +815,7 @@ export function FixturePlanner() {
                 <select
                   value={teamBIdx}
                   onChange={e => setTeamBIdx(Number(e.target.value))}
-                  className="w-full bg-[#0d0e10]/80 border border-white/[0.06] rounded-xl py-2 pl-10 pr-3.5 text-xs font-bold text-white focus:border-successor-mint/50 focus:outline-none transition-all cursor-pointer"
+                  className="w-full bg-[#0d0e10]/80 border border-white/[0.06] rounded-xl py-2 pl-10 pr-3.5 text-[16px] md:text-xs font-bold text-white focus:border-successor-mint/50 focus:outline-none transition-all cursor-pointer"
                 >
                   {teams.map((t, idx) => (
                     <option key={t.abbr} value={idx}>{t.name} (FDR: {getAverageFdr(t)})</option>
