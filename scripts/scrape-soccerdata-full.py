@@ -245,6 +245,7 @@ export interface BundesligaRosterPlayer {{
   goals: number;
   assists: number;
   matches_played: number;
+  season?: string;
   stats: PlayerStats;
 }}
 
